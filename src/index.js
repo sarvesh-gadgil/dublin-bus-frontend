@@ -3,10 +3,22 @@ import ReactDOM from 'react-dom';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
+import { Provider } from 'react-redux';
+import { createStore, applyMiddleware } from 'redux';
+import reducer from './reducers/reducer';
+import thunk from 'redux-thunk';
+import { checkAuthentication } from './actions/action';
+
+const store = createStore(reducer, applyMiddleware(thunk));
+
+if (localStorage.authToken) {
+  store.dispatch(checkAuthentication(localStorage.authToken));
+}
+
 
 ReactDOM.render(
   <React.StrictMode>
-    <App />
+    <Provider store={store}><App /></Provider>
   </React.StrictMode>,
   document.getElementById('root')
 );
