@@ -1,6 +1,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
+import GoogleMap from '../components/GoogleMap';
 
 class Home extends React.Component {
     render() {
@@ -8,7 +9,8 @@ class Home extends React.Component {
             <div>
                 {!this.props.isAuthenticated ? (
                     <div>
-                        Welcome to Dublin Bus
+                        Welcome to Dublin Bus <br />
+                        <GoogleMap isAuthenticated={false} />
                     </div>
                 ) : (
                         <div>
