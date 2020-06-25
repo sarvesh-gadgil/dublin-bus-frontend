@@ -19,7 +19,7 @@ class Login extends React.Component {
     handleLoginFormValues = (event) => {
         let newState = { ...this.state };
         newState.credentials[event.target.name] = event.target.value;
-        this.setState({ newState });
+        this.setState(newState);
     }
 
     render() {
