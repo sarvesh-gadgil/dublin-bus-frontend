@@ -9,7 +9,7 @@ import Container from '@material-ui/core/Container';
 import Grid from '@material-ui/core/Grid';
 import Paper from '@material-ui/core/Paper';
 import Avatar from '@material-ui/core/Avatar';
-import avatar_img from '../images/dublin_bus.png';
+import avatar_img from '../images/login_logo.png';
 import CssBaseline from '@material-ui/core/CssBaseline';
 
 class Login extends React.Component {
@@ -88,6 +88,7 @@ class Login extends React.Component {
                                         variant="contained"
                                         style={{ backgroundColor: '#2e7d32', color: 'white' }}
                                         onClick={this.loginUser.bind(this)}
+                                        size="large"
                                     >
                                         Login
                                     </Button>
@@ -97,6 +98,7 @@ class Login extends React.Component {
                                         type="button"
                                         fullWidth
                                         variant="contained"
+                                        size="large"
                                     >
                                         Register
                                     </Button>

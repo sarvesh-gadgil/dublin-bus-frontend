@@ -3,6 +3,10 @@ import { Link, withRouter } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { LOGOUT_ACTION } from '../constants';
 import { logout } from '../actions/action'
+import AppBar from '@material-ui/core/AppBar';
+import Toolbar from '@material-ui/core/Toolbar';
+import Button from '@material-ui/core/Button';
+import logo from '../images/logo.png';
 
 
 class Navbar extends React.Component {
@@ -14,18 +18,20 @@ class Navbar extends React.Component {
 
     render() {
         return (
-            <div>
-                {this.props.isAuthenticated ? (
-                    <ul>
-                        <li><a href="#!" onClick={this.logoutUser.bind(this)}>Logout</a></li>
-                    </ul>
-                ) : (
-                        <ul>
-                            <li><Link to="/">Home</Link></li>
-                            <li><Link to="/login">Login</Link></li>
-                        </ul>
-                    )}
-            </div>
+            <AppBar position="static">
+                <Toolbar style={{ backgroundColor: "rgb(51,51,51)" }}>
+                    <div style={{ flex: 1 }}>
+                        <Link to="/"><img src={logo} alt="logo" /></Link>
+                    </div>
+                    {this.props.isAuthenticated ? (
+                        <Button color="inherit" onClick={this.logoutUser.bind(this)}>Logout</Button>
+                    ) : (
+                            <Link to="/login" style={{ color: 'inherit', textDecoration: 'inherit' }}>
+                                <Button color="inherit" variant="outlined">Login</Button>
+                            </Link>
+                        )}
+                </Toolbar>
+            </AppBar>
         )
     }
 }
