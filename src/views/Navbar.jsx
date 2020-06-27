@@ -24,7 +24,7 @@ class Navbar extends React.Component {
                         <Link to="/"><img src={logo} alt="logo" /></Link>
                     </div>
                     {this.props.isAuthenticated ? (
-                        <Button color="inherit" onClick={this.logoutUser.bind(this)}>Logout</Button>
+                        <Button color="inherit" variant="outlined" onClick={this.logoutUser.bind(this)}>Logout</Button>
                     ) : (
                             <Link to="/login" style={{ color: 'inherit', textDecoration: 'inherit' }}>
                                 <Button color="inherit" variant="outlined">Login</Button>

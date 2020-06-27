@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
 import GoogleMap from '../components/GoogleMap';
-import heroImage from '../images/bus_hero_image.jpg';
+// import heroImage from '../images/bus_hero_image.jpg';
 import Typography from '@material-ui/core/Typography';
 
 class Home extends React.Component {
@@ -11,7 +11,7 @@ class Home extends React.Component {
             <div>
                 {!this.props.isAuthenticated ? (
                     <div>
-                        <img src={heroImage} alt="" style={{ height: "50vh", width: "100vw", objectFit: 'cover' }} />
+                        {/* <img src={heroImage} alt="" style={{ height: "50vh", width: "100vw", objectFit: 'cover' }} /> */}
                         <Typography component="h1" variant="h4" align="center">
                             Welcome to Dublin Bus
                                 </Typography>

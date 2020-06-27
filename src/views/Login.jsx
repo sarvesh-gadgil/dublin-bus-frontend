@@ -54,6 +54,7 @@ class Login extends React.Component {
                                     <TextField
                                         margin="normal"
                                         required
+                                        autoFocus
                                         fullWidth
                                         id="email"
                                         label="Email Address"
