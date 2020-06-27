@@ -95,7 +95,7 @@ class GoogleMap extends React.Component {
 
     initMap = () => {
         this.mapObject = new google.maps.Map(this.map.current, {
-            zoom: 14,
+            zoom: 12,
             center: {
                 lat: 53.346519,
                 lng: -6.268644
@@ -174,7 +174,21 @@ class GoogleMap extends React.Component {
         } else {
             this.getGoogleMapsAutocomplete(value).then(
                 res => {
-                    newState.startBusStopSearchedValues = res.data;
+                    if (destinationMarker != null) {
+                        let filteredResult = [];
+                        for (var i = 0; i < res.data.length; i++) {
+                            if (res.data[i].fromDB) {
+                                if (res.data[i].id !== destinationMarker.get('stop_id')) {
+                                    filteredResult.push(res.data[i]);
+                                }
+                            } else {
+                                filteredResult.push(res.data[i]);
+                            }
+                        }
+                        newState.startBusStopSearchedValues = filteredResult;
+                    } else {
+                        newState.startBusStopSearchedValues = res.data;
+                    }
                     this.setState(newState);
                 }, err => {
                     console.log('error in startBusStopOnInputChange', err)
@@ -184,47 +198,67 @@ class GoogleMap extends React.Component {
 
     startBusStopOnSelect = (event, value, reason) => {
         if (!!value) {
-            this.getGoogleMapsNearestStops(value.id).then(
-                res => {
-                    clearAllMarkersForStart();
-                    this.markersOnMap = [];
-                    for (var i = 0; i < res.data.length; i++) {
-                        if (sourceMarker != null && res.data[i].stop_id === sourceMarker.get('stop_id')) {
-                            continue;
-                        }
-                        if (destinationMarker != null && res.data[i].stop_id === destinationMarker.get('stop_id')) {
-                            continue;
-                        }
-                        const marker = new google.maps.Marker({
-                            position: { lat: parseFloat(res.data[i].stop_lat), lng: parseFloat(res.data[i].stop_lng) },
-                            map: this.mapObject,
-                            icon: require('../images/marker_red.png'),
-                            animation: google.maps.Animation.DROP,
-                            stop_id: res.data[i].stop_id,
-                            stop_name: res.data[i].stop_name
-                        });
-
-                        marker.addListener('click', this.handleSourceMarkerOnclick.bind(this, marker));
-
-                        marker.addListener('mouseover', function () {
-                            const infowindow = new google.maps.InfoWindow({
-                                content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
-                                    + "Stop No: <b>" + marker.get('stop_id') + "</b>"
+            if (!value.fromDB) {
+                this.getGoogleMapsNearestStops(value.id).then(
+                    res => {
+                        clearAllMarkersForStart();
+                        this.markersOnMap = [];
+                        var markerBounds = new google.maps.LatLngBounds();
+                        for (var i = 0; i < res.data.length; i++) {
+                            if (sourceMarker != null && res.data[i].stop_id === sourceMarker.get('stop_id')) {
+                                continue;
+                            }
+                            if (destinationMarker != null && res.data[i].stop_id === destinationMarker.get('stop_id')) {
+                                continue;
+                            }
+                            const marker = new google.maps.Marker({
+                                position: { lat: parseFloat(res.data[i].stop_lat), lng: parseFloat(res.data[i].stop_lng) },
+                                map: this.mapObject,
+                                icon: require('../images/marker_red.png'),
+                                animation: google.maps.Animation.DROP,
+                                stop_id: res.data[i].stop_id,
+                                stop_name: res.data[i].stop_name
                             });
-                            markersInfoWindow.push(infowindow);
-                            infowindow.open(marker.get('map'), marker);
-                        });
 
-                        marker.addListener('mouseout', function () {
-                            closeAllOtherInfo()
-                        })
+                            markerBounds.extend({ lat: parseFloat(res.data[i].stop_lat), lng: parseFloat(res.data[i].stop_lng) })
 
-                        markersOnMap.push(marker);
-                    }
-                },
-                err => {
-                    console.log('error in startBusStopOnSelect', err)
-                })
+                            marker.addListener('click', this.handleSourceMarkerOnclick.bind(this, marker));
+
+                            marker.addListener('mouseover', function () {
+                                const infowindow = new google.maps.InfoWindow({
+                                    content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
+                                        + "Stop No: <b>" + marker.get('stop_id') + "</b>"
+                                });
+                                markersInfoWindow.push(infowindow);
+                                infowindow.open(marker.get('map'), marker);
+                            });
+
+                            marker.addListener('mouseout', function () {
+                                closeAllOtherInfo()
+                            })
+
+                            markersOnMap.push(marker);
+                        }
+                        this.mapObject.fitBounds(markerBounds);
+                    },
+                    err => {
+                        console.log('error in startBusStopOnSelect', err)
+                    })
+            } else {
+                clearAllMarkersForStart();
+                const marker = new google.maps.Marker({
+                    position: { lat: parseFloat(value.stop_lat), lng: parseFloat(value.stop_lng) },
+                    map: this.mapObject,
+                    icon: require('../images/marker_black.png'),
+                    animation: google.maps.Animation.DROP,
+                    stop_id: value.id,
+                    stop_name: value.title
+                });
+
+                this.markersOnMap = [];
+                markersOnMap.push(marker);
+                sourceMarker = marker;
+            }
         }
     }
 
@@ -239,7 +273,21 @@ class GoogleMap extends React.Component {
         } else {
             this.getGoogleMapsAutocomplete(value).then(
                 res => {
-                    newState.destinationBusStopSearchedValues = res.data;
+                    if (sourceMarker != null) {
+                        let filteredResult = [];
+                        for (var i = 0; i < res.data.length; i++) {
+                            if (res.data[i].fromDB) {
+                                if (res.data[i].id !== sourceMarker.get('stop_id')) {
+                                    filteredResult.push(res.data[i]);
+                                }
+                            } else {
+                                filteredResult.push(res.data[i]);
+                            }
+                        }
+                        newState.destinationBusStopSearchedValues = filteredResult;
+                    } else {
+                        newState.destinationBusStopSearchedValues = res.data;
+                    }
                     this.setState(newState);
                 }, err => {
                     console.log('error in destinationBusStopOnInputChange', err)
@@ -249,47 +297,67 @@ class GoogleMap extends React.Component {
 
     destinationBusStopOnSelect = (event, value, reason) => {
         if (!!value) {
-            this.getGoogleMapsNearestStops(value.id).then(
-                res => {
-                    clearAllMarkersForDestination();
-                    this.markersOnMap = [];
-                    for (var i = 0; i < res.data.length; i++) {
-                        if (sourceMarker != null && res.data[i].stop_id === sourceMarker.get('stop_id')) {
-                            continue;
-                        }
-                        if (destinationMarker != null && res.data[i].stop_id === destinationMarker.get('stop_id')) {
-                            continue;
-                        }
-                        const marker = new google.maps.Marker({
-                            position: { lat: parseFloat(res.data[i].stop_lat), lng: parseFloat(res.data[i].stop_lng) },
-                            map: this.mapObject,
-                            icon: require('../images/marker_red.png'),
-                            animation: google.maps.Animation.DROP,
-                            stop_id: res.data[i].stop_id,
-                            stop_name: res.data[i].stop_name
-                        });
-
-                        marker.addListener('click', this.handleDestinationMarkerOnclick.bind(this, marker));
-
-                        marker.addListener('mouseover', function () {
-                            const infowindow = new google.maps.InfoWindow({
-                                content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
-                                    + "Stop No: <b>" + marker.get('stop_id') + "</b>"
+            if (!value.fromDB) {
+                this.getGoogleMapsNearestStops(value.id).then(
+                    res => {
+                        clearAllMarkersForDestination();
+                        this.markersOnMap = [];
+                        var markerBounds = new google.maps.LatLngBounds();
+                        for (var i = 0; i < res.data.length; i++) {
+                            if (sourceMarker != null && res.data[i].stop_id === sourceMarker.get('stop_id')) {
+                                continue;
+                            }
+                            if (destinationMarker != null && res.data[i].stop_id === destinationMarker.get('stop_id')) {
+                                continue;
+                            }
+                            const marker = new google.maps.Marker({
+                                position: { lat: parseFloat(res.data[i].stop_lat), lng: parseFloat(res.data[i].stop_lng) },
+                                map: this.mapObject,
+                                icon: require('../images/marker_red.png'),
+                                animation: google.maps.Animation.DROP,
+                                stop_id: res.data[i].stop_id,
+                                stop_name: res.data[i].stop_name
                             });
-                            markersInfoWindow.push(infowindow);
-                            infowindow.open(marker.get('map'), marker);
-                        });
 
-                        marker.addListener('mouseout', function () {
-                            closeAllOtherInfo()
-                        })
+                            markerBounds.extend({ lat: parseFloat(res.data[i].stop_lat), lng: parseFloat(res.data[i].stop_lng) })
 
-                        markersOnMap.push(marker);
-                    }
-                },
-                err => {
-                    console.log('error in startBusStopOnSelect', err)
-                })
+                            marker.addListener('click', this.handleDestinationMarkerOnclick.bind(this, marker));
+
+                            marker.addListener('mouseover', function () {
+                                const infowindow = new google.maps.InfoWindow({
+                                    content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
+                                        + "Stop No: <b>" + marker.get('stop_id') + "</b>"
+                                });
+                                markersInfoWindow.push(infowindow);
+                                infowindow.open(marker.get('map'), marker);
+                            });
+
+                            marker.addListener('mouseout', function () {
+                                closeAllOtherInfo()
+                            })
+
+                            markersOnMap.push(marker);
+                        }
+                        this.mapObject.fitBounds(markerBounds);
+                    },
+                    err => {
+                        console.log('error in startBusStopOnSelect', err)
+                    })
+            } else {
+                clearAllMarkersForDestination();
+                const marker = new google.maps.Marker({
+                    position: { lat: parseFloat(value.stop_lat), lng: parseFloat(value.stop_lng) },
+                    map: this.mapObject,
+                    icon: require('../images/marker_green.png'),
+                    animation: google.maps.Animation.DROP,
+                    stop_id: value.id,
+                    stop_name: value.title
+                });
+
+                this.markersOnMap = [];
+                markersOnMap.push(marker);
+                destinationMarker = marker;
+            }
         }
     }
 
