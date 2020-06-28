@@ -19,7 +19,7 @@ class Navbar extends React.Component {
     render() {
         return (
             <AppBar position="static">
-                <Toolbar style={{ backgroundColor: "rgb(51,51,51)" }}>
+                <Toolbar style={{ backgroundColor: "rgb(19,19,19)" }}>
                     <div style={{ flex: 1 }}>
                         <Link to="/"><img src={logo} alt="logo" /></Link>
                     </div>

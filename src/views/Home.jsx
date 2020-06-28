@@ -2,19 +2,20 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
 import GoogleMap from '../components/GoogleMap';
-// import heroImage from '../images/bus_hero_image.jpg';
-import Typography from '@material-ui/core/Typography';
+import home_banner from '../images/home_banner.jpg';
 
 class Home extends React.Component {
     render() {
         return (
-            <div>
+            <div style={{
+                width: "100%",
+                height: "650px",
+                backgroundImage: `url(${home_banner})`,
+                backgroundSize: 'cover',
+                padding: "10px"
+            }}>
                 {!this.props.isAuthenticated ? (
                     <div>
-                        {/* <img src={heroImage} alt="" style={{ height: "50vh", width: "100vw", objectFit: 'cover' }} /> */}
-                        <Typography component="h1" variant="h4" align="center">
-                            Welcome to Dublin Bus
-                                </Typography>
                         <GoogleMap isAuthenticated={false} />
                     </div>
                 ) : (

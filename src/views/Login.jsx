@@ -11,6 +11,7 @@ import Paper from '@material-ui/core/Paper';
 import Avatar from '@material-ui/core/Avatar';
 import avatar_img from '../images/login_logo.png';
 import CssBaseline from '@material-ui/core/CssBaseline';
+import login_banner from '../images/login_banner.jpg';
 
 class Login extends React.Component {
 
@@ -33,7 +34,13 @@ class Login extends React.Component {
 
     render() {
         return (
-            <div>
+            <div style={{
+                width: "100%",
+                height: "700px",
+                backgroundImage: `url(${login_banner})`,
+                backgroundSize: 'cover',
+                padding: "10px"
+            }}>
                 <Container component="main" maxWidth="xs">
                     <Grid
                         container
@@ -87,7 +94,7 @@ class Login extends React.Component {
                                         type="button"
                                         fullWidth
                                         variant="contained"
-                                        style={{ backgroundColor: '#2e7d32', color: 'white' }}
+                                        style={{ backgroundColor: '#1c8715', color: 'white' }}
                                         onClick={this.loginUser.bind(this)}
                                         size="large"
                                     >
