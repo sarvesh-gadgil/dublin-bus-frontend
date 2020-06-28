@@ -3,6 +3,12 @@ import TextField from '@material-ui/core/TextField';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import axios from 'axios';
 import { API_URL } from '../constants';
+import Paper from '@material-ui/core/Paper';
+import Grid from '@material-ui/core/Grid';
+import CssBaseline from '@material-ui/core/CssBaseline';
+import Typography from '@material-ui/core/Typography';
+import Button from '@material-ui/core/Button';
+import moment from 'moment';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -87,7 +93,8 @@ class GoogleMap extends React.Component {
             startBusStopSearchedValues: [],
             startBusStopValue: null,
             destinationBusStopSearchedValues: [],
-            destinationBusStopValue: null
+            destinationBusStopValue: null,
+            dateTimeValue: ''
         }
         this.mapObject = null;
         this.map = React.createRef();
@@ -363,37 +370,89 @@ class GoogleMap extends React.Component {
 
     render() {
         return (
-            <>
-                <Autocomplete
-                    id="start_bus_stop_search"
-                    freeSolo
-                    onInputChange={this.startBusStopOnInputChange.bind(this)}
-                    onChange={this.startBusStopOnSelect.bind(this)}
-                    size="small"
-                    value={this.state.startBusStopValue}
-                    options={this.state.startBusStopSearchedValues}
-                    getOptionLabel={option => option.title}
-                    style={{ width: "300px" }}
-                    renderInput={(params) => <TextField {...params} label="Search Start Bus Stop" margin="normal" variant="outlined" />}
-                />
+            <div style={{ flexGrow: 1 }}>
+                <Grid container spacing={2}
+                    direction="row"
+                    justify="space-between"
+                    alignItems="flex-start"
+                >
+                    <Grid item xs={12} sm={12} lg={3} md={3}>
+                        <CssBaseline />
+                        <Paper elevation={2} style={{ padding: "10px", height: "inherit", backgroundColor: ("rgb(250,251,252)") }}>
+                            <Typography>
+                                <b style={{ fontSize: "29px" }}>Welcome to Dublin Bus</b>
+                            </Typography>
+                            <br />
+                            <Typography>
+                                <span style={{ fontSize: "15px" }}>Fill in the below details to get travel time estimates and more!</span>
+                            </Typography>
 
-                <Autocomplete
-                    id="destination_bus_stop_search"
-                    freeSolo
-                    onInputChange={this.destinationBusStopOnInputChange.bind(this)}
-                    onChange={this.destinationBusStopOnSelect.bind(this)}
-                    size="small"
-                    value={this.state.destinationBusStopValue}
-                    options={this.state.destinationBusStopSearchedValues}
-                    getOptionLabel={option => option.title}
-                    style={{ width: "300px" }}
-                    renderInput={(params) => <TextField {...params} label="Search Destination Bus Stop" margin="normal" variant="outlined" />}
-                />
+                            <Autocomplete
+                                id="start_bus_stop_search"
+                                freeSolo
+                                onInputChange={this.startBusStopOnInputChange.bind(this)}
+                                onChange={this.startBusStopOnSelect.bind(this)}
+                                size="small"
+                                value={this.state.startBusStopValue}
+                                options={this.state.startBusStopSearchedValues}
+                                getOptionLabel={option => option.title}
+                                renderInput={(params) => <TextField {...params} label="Search source stop" margin="normal" variant="outlined" />}
+                            />
 
-                <br />
+                            <Autocomplete
+                                id="destination_bus_stop_search"
+                                freeSolo
+                                onInputChange={this.destinationBusStopOnInputChange.bind(this)}
+                                onChange={this.destinationBusStopOnSelect.bind(this)}
+                                size="small"
+                                value={this.state.destinationBusStopValue}
+                                options={this.state.destinationBusStopSearchedValues}
+                                getOptionLabel={option => option.title}
+                                renderInput={(params) => <TextField {...params} label="Search destination stop" margin="normal" variant="outlined" />}
+                            />
 
-                <div id="map" ref={this.map} style={{ width: '1000px', height: '600px' }}></div>
-            </>
+                            <TextField
+                                id="journey_date"
+                                label="Journey date"
+                                type="datetime-local"
+                                InputLabelProps={{
+                                    shrink: true,
+                                }}
+                                margin="normal"
+                                variant="outlined"
+                                fullWidth
+                                size="small"
+                                onChange={(event) => {
+                                    let newState = { ...this.state };
+                                    newState.dateTimeValue = event.target.value;
+                                    this.setState(newState);
+                                }}
+                                InputProps={{
+                                    inputProps: {
+                                        max: moment().add('days', 5).format('YYYY-MM-DDTHH:MM'),
+                                        min: moment().format('YYYY-MM-DDTHH:MM'),
+                                    }
+                                }}
+                            />
+                            <br />
+                            <br />
+                            <Button
+                                type="button"
+                                fullWidth
+                                variant="contained"
+                                style={{ backgroundColor: '#1c8715', color: 'white' }}
+                                size="large"
+                            > Login </Button>
+                        </Paper>
+                    </Grid>
+                    <Grid item xs={12} sm={12} lg={9} md={9}>
+                        <CssBaseline />
+                        <Paper elevation={2} style={{ padding: "3px", height: "inherit" }}>
+                            <div id="map" ref={this.map} style={{ width: 'inherit', height: '600px' }}></div>
+                        </Paper>
+                    </Grid>
+                </Grid>
+            </div>
         );
     }
 }
