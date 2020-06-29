@@ -3,6 +3,7 @@ import { Link, withRouter } from 'react-router-dom';
 import { connect } from 'react-redux';
 import { LOGOUT_ACTION } from '../constants';
 import { logout } from '../actions/action'
+import SignUp from '../signup';
 
 
 class Navbar extends React.Component {
@@ -15,6 +16,7 @@ class Navbar extends React.Component {
     render() {
         return (
             <div>
+                
                 {this.props.isAuthenticated ? (
                     <ul>
                         <li><a href="#!" onClick={this.logoutUser.bind(this)}>Logout</a></li>
@@ -25,7 +27,9 @@ class Navbar extends React.Component {
                             <li><Link to="/login">Login</Link></li>
                         </ul>
                     )}
+                    <SignUp/>
             </div>
+            
         )
     }
 }
