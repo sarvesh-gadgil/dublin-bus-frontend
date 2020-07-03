@@ -7,7 +7,6 @@ import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Typography from '@material-ui/core/Typography';
-import Button from '@material-ui/core/Button';
 import moment from 'moment';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
@@ -17,6 +16,9 @@ const markersInfoWindow = [];
 const markersOnMap = [];
 var sourceMarker = null;
 var destinationMarker = null;
+var mapObj;
+var directionRendererArray = [];
+var routeDataArray = [];
 
 const closeAllOtherInfo = () => {
     for (var i = 0; i < markersInfoWindow.length; i++) {
@@ -69,12 +71,12 @@ class GoogleMap extends React.Component {
             busToggleButton: '',
             busArrivingAtMarkers: []
         }
-        this.mapObject = null;
+        // this.mapObject = null;
         this.map = React.createRef();
     }
 
     initMap = () => {
-        this.mapObject = new google.maps.Map(this.map.current, {
+        mapObj = new google.maps.Map(this.map.current, {
             zoom: 12,
             center: {
                 lat: 53.346519,
@@ -130,8 +132,11 @@ class GoogleMap extends React.Component {
             newState.busArrivingAtMarkers = [];
             newState.handleBusToggle = '';
             this.setState(newState);
-            clearAllMarkersForStart();
             sourceMarker = null;
+            destinationMarker = null;
+            clearAllMarkersForStart();
+            this.removeRoute();
+            routeDataArray = [];
         } else {
             this.getGoogleMapsAutocomplete(value).then(
                 res => {
@@ -175,7 +180,7 @@ class GoogleMap extends React.Component {
                             }
                             const marker = new google.maps.Marker({
                                 position: { lat: parseFloat(res.data[i].stop_lat), lng: parseFloat(res.data[i].stop_lng) },
-                                map: this.mapObject,
+                                map: mapObj,
                                 icon: require('../images/marker_red.png'),
                                 animation: google.maps.Animation.DROP,
                                 stop_id: res.data[i].stop_id,
@@ -210,7 +215,7 @@ class GoogleMap extends React.Component {
 
                             markersOnMap.push(marker);
                         }
-                        this.mapObject.fitBounds(markerBounds);
+                        mapObj.fitBounds(markerBounds);
                     },
                     err => {
                         console.log('error in startBusStopOnSelect', err)
@@ -221,7 +226,7 @@ class GoogleMap extends React.Component {
                 var markerBounds = new google.maps.LatLngBounds();
                 const marker = new google.maps.Marker({
                     position: { lat: parseFloat(value.stop_lat), lng: parseFloat(value.stop_lng) },
-                    map: this.mapObject,
+                    map: mapObj,
                     icon: require('../images/marker_black.png'),
                     animation: google.maps.Animation.DROP,
                     stop_id: value.id,
@@ -235,7 +240,7 @@ class GoogleMap extends React.Component {
                 markersOnMap.push(marker);
                 sourceMarker = marker;
 
-                this.mapObject.fitBounds(markerBounds);
+                mapObj.fitBounds(markerBounds);
 
                 this.setState({
                     busArrivingAtMarkers: marker.get('all_bus_numbers')
@@ -245,10 +250,189 @@ class GoogleMap extends React.Component {
     }
 
     handleBusToggle = (event, newToggleValue) => {
-        this.setState({
-            busToggleButton: newToggleValue
+        if (!!newToggleValue) {
+            this.setState({
+                busToggleButton: newToggleValue
+            })
+            const busNoAndDirection = newToggleValue.split('(');
+            axios.get(API_URL + "api/bus/get/routes", {
+                params: {
+                    bus_number: busNoAndDirection[0].trim(),
+                    direction: busNoAndDirection[1].replace(")", "").trim(),
+                    stop_id: sourceMarker.get('stop_id')
+                }
+            }).then(res => {
+                clearAllMarkersExceptStart();
+                routeDataArray = []
+                this.createRoute(res.data);
+            }, err => {
+                console.log("error in handleBusToggle", err);
+            })
+        }
+    }
+
+    removeRoute = () => {
+        for (var i = 0; i < directionRendererArray.length; i++) {
+            directionRendererArray[i].setMap(null);
+        }
+        directionRendererArray = [];
+    }
+
+    handleDestinationMarkerOnclick = (marker) => {
+        if (destinationMarker != null && destinationMarker.get('stop_id') === marker.get('stop_id')) {
+            return;
+        }
+        if (destinationMarker != null) {
+            destinationMarker.setIcon(require('../images/marker_red.png'));
+            destinationMarker = null;
+        };
+        destinationMarker = marker;
+        marker.setIcon(require('../images/marker_green.png'));
+
+        marker.addListener('mouseover', function () {
+            const infowindow = new google.maps.InfoWindow({
+                content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
+                    + "Stop No: <b>" + marker.get('stop_id')
+            });
+            markersInfoWindow.push(infowindow);
+            infowindow.open(marker.get('map'), marker);
+        });
+
+        marker.addListener('mouseout', function () {
+            closeAllOtherInfo()
         })
-        alert(newToggleValue);
+
+        markersOnMap.push(marker);
+
+        clearAllMarkersExceptStart();
+
+        let newState = { ...this.state };
+        newState.busArrivingAtMarkers = [];
+        newState.handleBusToggle = '';
+        this.setState(newState)
+
+        let newRouteTillDest = [];
+        for (var i = 0; i < routeDataArray.length; i++) {
+            if (routeDataArray[i].stop_id === destinationMarker.get('stop_id')) {
+                newRouteTillDest.push(routeDataArray[i]);
+                break;
+            } else {
+                newRouteTillDest.push(routeDataArray[i]);
+            }
+        }
+        this.createRoute(newRouteTillDest)
+    }
+
+    createRoute = (res) => {
+        this.removeRoute();
+        routeDataArray = res;
+
+        // Create markers except start
+        if (destinationMarker === null) {
+            for (var m = 1; m < res.length; m++) {
+                const marker = new google.maps.Marker({
+                    position: { lat: parseFloat(res[m].stop_lat), lng: parseFloat(res[m].stop_lng) },
+                    map: mapObj,
+                    icon: require('../images/marker_red.png'),
+                    animation: google.maps.Animation.DROP,
+                    stop_id: res[m].stop_id,
+                    stop_name: res[m].stop_name,
+                    program_number: res[m].program_number
+                });
+
+                marker.addListener('mouseover', function () {
+                    const infowindow = new google.maps.InfoWindow({
+                        content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
+                            + "Stop No: <b>" + marker.get('stop_id')
+                    });
+                    markersInfoWindow.push(infowindow);
+                    infowindow.open(marker.get('map'), marker);
+                });
+
+                marker.addListener('mouseout', function () {
+                    closeAllOtherInfo()
+                })
+
+                marker.addListener('click', this.handleDestinationMarkerOnclick.bind(this, marker));
+
+                markersOnMap.push(marker);
+            }
+        } else {
+            for (var d = 1; d < res.length; d++) {
+                if (res[d].stop_id !== destinationMarker.get('stop_id')) {
+                    const marker = new google.maps.Marker({
+                        position: { lat: parseFloat(res[d].stop_lat), lng: parseFloat(res[d].stop_lng) },
+                        map: mapObj,
+                        icon: require('../images/marker_red.png'),
+                        animation: google.maps.Animation.DROP,
+                        stop_id: res[d].stop_id,
+                        stop_name: res[d].stop_name,
+                        program_number: res[d].program_number
+                    });
+
+                    marker.addListener('mouseover', function () {
+                        const infowindow = new google.maps.InfoWindow({
+                            content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
+                                + "Stop No: <b>" + marker.get('stop_id')
+                        });
+                        markersInfoWindow.push(infowindow);
+                        infowindow.open(marker.get('map'), marker);
+                    });
+
+                    marker.addListener('mouseout', function () {
+                        closeAllOtherInfo()
+                    })
+                    markersOnMap.push(marker);
+                }
+            }
+        }
+
+        // Ref for below code: https://stackoverflow.com/questions/8779886/exceed-23-waypoint-per-request-limit-on-google-directions-api-business-work-lev
+        var directionsService = new google.maps.DirectionsService();
+
+        for (var k = 0, parts = [], max = 25 - 1; k < res.length; k = k + max) {
+            parts.push(res.slice(k, k + max + 1));
+        }
+
+        // Service callback to process service results
+        var service_callback = function (response, status) {
+            if (status === 'OK') {
+                var directionsRenderer = new google.maps.DirectionsRenderer();
+                directionsRenderer.setOptions({
+                    polylineOptions: {
+                        strokeWeight: 7,
+                        strokeOpacity: 4,
+                        strokeColor: 'blue'
+                    },
+                    suppressMarkers: true
+                });
+                directionsRenderer.setDirections(response);
+                directionsRenderer.setMap(mapObj);
+                directionRendererArray.push(directionsRenderer);
+            } else {
+                console.log('Directions request failed due to ' + status);
+                return;
+            }
+        }
+
+        // Send requests to service to get route (for stations count <= 25 only one request will be sent)
+        for (var i = 0; i < parts.length; i++) {
+            // Waypoints does not include first station (origin) and last station (destination)
+            var waypoints = [];
+            for (var j = 1; j < parts[i].length - 1; j++) {
+                waypoints.push({ location: new google.maps.LatLng(parts[i][j].stop_lat, parts[i][j].stop_lng), stopover: true });
+            }
+
+            // Service options
+            var request = {
+                origin: new google.maps.LatLng(parts[i][0].stop_lat, parts[i][0].stop_lng),
+                destination: new google.maps.LatLng(parts[i][parts[i].length - 1].stop_lat, parts[i][parts[i].length - 1].stop_lng),
+                waypoints: waypoints,
+                travelMode: 'DRIVING'
+            };
+            // Send request
+            directionsService.route(request, service_callback);
+        }
     }
 
     render() {
@@ -325,15 +509,6 @@ class GoogleMap extends React.Component {
                                     }
                                 }}
                             />
-                            <br />
-                            <br />
-                            <Button
-                                type="button"
-                                fullWidth
-                                variant="contained"
-                                style={{ backgroundColor: '#1c8715', color: 'white' }}
-                                size="large"
-                            > Login </Button>
                         </Paper>
                     </Grid>
                     <Grid item xs={12} sm={12} lg={9} md={9}>
