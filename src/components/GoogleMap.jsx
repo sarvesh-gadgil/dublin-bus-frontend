@@ -10,6 +10,10 @@ import Typography from '@material-ui/core/Typography';
 import moment from 'moment';
 import ToggleButton from '@material-ui/lab/ToggleButton';
 import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
+import Stepper from '@material-ui/core/Stepper';
+import Step from '@material-ui/core/Step';
+import StepLabel from '@material-ui/core/StepLabel';
+import StepContent from '@material-ui/core/StepContent';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -69,7 +73,8 @@ class GoogleMap extends React.Component {
             destinationBusStopValue: null,
             dateTimeValue: '',
             busToggleButton: '',
-            busArrivingAtMarkers: []
+            busArrivingAtMarkers: [],
+            routeDataArrayForStepper: []
         }
         // this.mapObject = null;
         this.map = React.createRef();
@@ -131,6 +136,7 @@ class GoogleMap extends React.Component {
             newState.startBusStopValue = null;
             newState.busArrivingAtMarkers = [];
             newState.handleBusToggle = '';
+            newState.routeDataArrayForStepper = [];
             this.setState(newState);
             sourceMarker = null;
             destinationMarker = null;
@@ -320,6 +326,9 @@ class GoogleMap extends React.Component {
                 newRouteTillDest.push(routeDataArray[i]);
             }
         }
+        this.setState({
+            routeDataArrayForStepper: newRouteTillDest
+        })
         this.createRoute(newRouteTillDest)
     }
 
@@ -445,7 +454,7 @@ class GoogleMap extends React.Component {
                 >
                     <Grid item xs={12} sm={12} lg={3} md={3}>
                         <CssBaseline />
-                        <Paper elevation={2} style={{ padding: "10px", height: "inherit", backgroundColor: ("rgb(250,251,252)") }}>
+                        <Paper elevation={2} style={{ padding: "10px", height: "inherit", backgroundColor: ("rgb(250,251,252)"), maxHeight: "600px" }}>
                             <Typography>
                                 <b style={{ fontSize: "29px" }}>Welcome to Dublin Bus</b>
                             </Typography>
@@ -466,8 +475,8 @@ class GoogleMap extends React.Component {
                                 renderInput={(params) => <TextField {...params} label="Search source stop" margin="normal" variant="outlined" />}
                             />
 
-                            {sourceMarker && (
-                                <div style={{ width: 'inherit', overflowX: 'auto' }}>
+                            {sourceMarker && !destinationMarker && (
+                                <div style={{ width: 'inherit', overflow: 'auto' }}>
                                     <ToggleButtonGroup
                                         value={this.state.busToggleButton}
                                         exclusive
@@ -509,6 +518,20 @@ class GoogleMap extends React.Component {
                                     }
                                 }}
                             />
+                            {sourceMarker && destinationMarker && (
+                                <div style={{ height:'350px', overflow: 'auto' }}>
+                                    <Stepper orientation="vertical" style={{ backgroundColor: "transparent" }}>
+                                        {this.state.routeDataArrayForStepper.map((busData, index) => (
+                                            <Step key={index} active>
+                                                <StepLabel>{busData.stop_name + "(" + busData.stop_id + ")"}</StepLabel>
+                                                <StepContent>
+                                                    <Typography>Estimated travel time: 8 min</Typography>
+                                                </StepContent>
+                                            </Step>
+                                        ))}
+                                    </Stepper>
+                                </div>
+                            )}
                         </Paper>
                     </Grid>
                     <Grid item xs={12} sm={12} lg={9} md={9}>
