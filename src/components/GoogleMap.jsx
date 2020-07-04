@@ -14,6 +14,12 @@ import Stepper from '@material-ui/core/Stepper';
 import Step from '@material-ui/core/Step';
 import StepLabel from '@material-ui/core/StepLabel';
 import StepContent from '@material-ui/core/StepContent';
+import {
+    MuiPickersUtilsProvider,
+    KeyboardTimePicker,
+    KeyboardDatePicker,
+} from '@material-ui/pickers';
+import DateFnsUtils from '@date-io/date-fns';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -23,6 +29,7 @@ var destinationMarker = null;
 var mapObj;
 var directionRendererArray = [];
 var routeDataArray = [];
+var currentDateTime = moment().format('YYYY-MM-DDTHH:MM:SS');
 
 const closeAllOtherInfo = () => {
     for (var i = 0; i < markersInfoWindow.length; i++) {
@@ -67,14 +74,14 @@ class GoogleMap extends React.Component {
     constructor(props) {
         super();
         this.state = {
+            dateTimeValue: currentDateTime,
             startBusStopSearchedValues: [],
             startBusStopValue: null,
             destinationBusStopSearchedValues: [],
             destinationBusStopValue: null,
-            dateTimeValue: '',
             busToggleButton: '',
             busArrivingAtMarkers: [],
-            routeDataArrayForStepper: []
+            routeDataArrayForStepper: [],
         }
         // this.mapObject = null;
         this.map = React.createRef();
@@ -444,6 +451,12 @@ class GoogleMap extends React.Component {
         }
     }
 
+    handleOnchangeDateTime = (date, value) => {
+        let newState = { ...this.state };
+        newState.dateTimeValue = date;
+        this.setState(newState);
+    }
+
     render() {
         return (
             <div style={{ flexGrow: 1 }}>
@@ -495,37 +508,47 @@ class GoogleMap extends React.Component {
                                 </div>
                             )}
 
-                            <TextField
-                                id="journey_date"
-                                label="Journey date"
-                                type="datetime-local"
-                                InputLabelProps={{
-                                    shrink: true,
-                                }}
-                                margin="normal"
-                                variant="outlined"
-                                fullWidth
-                                size="small"
-                                onChange={(event) => {
-                                    let newState = { ...this.state };
-                                    newState.dateTimeValue = event.target.value;
-                                    this.setState(newState);
-                                }}
-                                InputProps={{
-                                    inputProps: {
-                                        max: moment().add('days', 5).format('YYYY-MM-DDTHH:MM'),
-                                        min: moment().format('YYYY-MM-DDTHH:MM'),
-                                    }
-                                }}
-                            />
+                            <MuiPickersUtilsProvider utils={DateFnsUtils}>
+                                <Grid container justify="space-around">
+                                    <KeyboardDatePicker
+                                        margin="normal"
+                                        variant="outlined"
+                                        fullWidth
+                                        size="small"
+                                        id="date_picker"
+                                        label="Pick journey date"
+                                        format="MM/dd/yyyy"
+                                        maxDate={moment().add(4, 'days').format('YYYY-MM-DD')}
+                                        minDate={moment().format('YYYY-MM-DD')}
+                                        value={this.state.dateTimeValue}
+                                        onChange={this.handleOnchangeDateTime.bind(this)}
+                                        KeyboardButtonProps={{
+                                            'aria-label': 'change date',
+                                        }}
+                                    />
+                                    <KeyboardTimePicker
+                                        margin="normal"
+                                        variant="outlined"
+                                        fullWidth
+                                        size="small"
+                                        id="time_picker"
+                                        label="Pick journey time"
+                                        value={this.state.dateTimeValue}
+                                        onChange={this.handleOnchangeDateTime.bind(this)}
+                                        KeyboardButtonProps={{
+                                            'aria-label': 'change time',
+                                        }}
+                                    />
+                                </Grid>
+                            </MuiPickersUtilsProvider>
                             {sourceMarker && destinationMarker && (
-                                <div style={{ height:'350px', overflow: 'auto' }}>
+                                <div style={{ height: '280px', overflow: 'auto' }}>
                                     <Stepper orientation="vertical" style={{ backgroundColor: "transparent" }}>
                                         {this.state.routeDataArrayForStepper.map((busData, index) => (
                                             <Step key={index} active>
                                                 <StepLabel>{busData.stop_name + "(" + busData.stop_id + ")"}</StepLabel>
                                                 <StepContent>
-                                                    <Typography>Estimated travel time: 8 min</Typography>
+                                                    <Typography>Estimated travel time:</Typography>
                                                 </StepContent>
                                             </Step>
                                         ))}
@@ -541,7 +564,7 @@ class GoogleMap extends React.Component {
                         </Paper>
                     </Grid>
                 </Grid>
-            </div>
+            </div >
         );
     }
 }

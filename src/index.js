@@ -16,10 +16,7 @@ if (localStorage.authToken) {
 }
 
 
-ReactDOM.render(
-  <React.StrictMode>
-    <Provider store={store}><App /></Provider>
-  </React.StrictMode>,
+ReactDOM.render(<Provider store={store}><App /></Provider>, 
   document.getElementById('root')
 );
 
