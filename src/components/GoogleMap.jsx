@@ -20,6 +20,7 @@ import {
     KeyboardDatePicker,
 } from '@material-ui/pickers';
 import DateFnsUtils from '@date-io/date-fns';
+import Switch from '@material-ui/core/Switch';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -29,7 +30,6 @@ var destinationMarker = null;
 var mapObj;
 var directionRendererArray = [];
 var routeDataArray = [];
-var currentDateTime = moment().format('YYYY-MM-DDTHH:MM:SS');
 var allBusStopsArray = [];
 
 const closeAllOtherInfo = () => {
@@ -75,7 +75,7 @@ class GoogleMap extends React.Component {
     constructor(props) {
         super();
         this.state = {
-            dateTimeValue: currentDateTime,
+            dateTimeValue: moment(),
             startBusStopSearchedValues: [],
             startBusStopValue: null,
             destinationBusStopSearchedValues: [],
@@ -83,7 +83,9 @@ class GoogleMap extends React.Component {
             busToggleButton: '',
             busArrivingAtMarkers: [],
             routeDataArrayForStepper: [],
-            isBusNoVisible: false
+            isBusNoVisible: false,
+            isDestinationToggled: true,
+            searchValue: 'Search destination stop'
         }
         // this.mapObject = null;
         this.map = React.createRef();
@@ -478,6 +480,29 @@ class GoogleMap extends React.Component {
         this.setState(newState);
     }
 
+    handleOnSourceDestToggleChange = () => {
+        let newState = { ...this.state };
+        newState.startBusStopSearchedValues = [];
+        newState.busArrivingAtMarkers = [];
+        newState.busToggleButton = '';
+        newState.routeDataArrayForStepper = [];
+        newState.isBusNoVisible = false;
+        newState.isDestinationToggled = !this.state.isDestinationToggled
+        if (newState.isDestinationToggled) {
+            newState.searchValue = "Search destination stop";
+        } else {
+            newState.searchValue = "Search source stop"
+        }
+        newState.startBusStopValue = { title: null };
+        this.setState(newState);
+        sourceMarker = null;
+        destinationMarker = null;
+        clearAllMarkersForStart();
+        this.removeRoute();
+        routeDataArray = [];
+        allBusStopsArray = [];
+    }
+
     render() {
         return (
             <div style={{ flexGrow: 1 }}>
@@ -506,7 +531,31 @@ class GoogleMap extends React.Component {
                                 value={this.state.startBusStopValue}
                                 options={this.state.startBusStopSearchedValues}
                                 getOptionLabel={option => option.title}
-                                renderInput={(params) => <TextField {...params} label="Search for stops" margin="normal" variant="outlined" />}
+                                renderInput={(params) =>
+                                    <Grid container spacing={2}
+                                        direction="row"
+                                        justify="space-between"
+                                        alignItems="center"
+                                    >
+                                        <Grid item xs={10} sm={11} lg={9} md={9}>
+                                            <TextField
+                                                {...params}
+                                                label={this.state.searchValue}
+                                                margin="normal"
+                                                variant="outlined"
+                                                fullWidth
+                                                autoFocus
+                                            />
+                                        </Grid>
+                                        <Grid item xs={2} sm={1} lg={3} md={3} style={{ width: 'inherit' }}>
+                                            <Switch
+                                                defaultChecked
+                                                color="default"
+                                                onChange={this.handleOnSourceDestToggleChange.bind(this)}
+                                            />
+                                        </Grid>
+                                    </Grid>
+                                }
                             />
 
                             {sourceMarker && !destinationMarker && this.state.isBusNoVisible && (
