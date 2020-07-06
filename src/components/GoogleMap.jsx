@@ -30,6 +30,7 @@ var mapObj;
 var directionRendererArray = [];
 var routeDataArray = [];
 var currentDateTime = moment().format('YYYY-MM-DDTHH:MM:SS');
+var allBusStopsArray = [];
 
 const closeAllOtherInfo = () => {
     for (var i = 0; i < markersInfoWindow.length; i++) {
@@ -82,6 +83,7 @@ class GoogleMap extends React.Component {
             busToggleButton: '',
             busArrivingAtMarkers: [],
             routeDataArrayForStepper: [],
+            isBusNoVisible: false
         }
         // this.mapObject = null;
         this.map = React.createRef();
@@ -133,6 +135,7 @@ class GoogleMap extends React.Component {
                 + " (" + marker.get('stop_id') + ")"
         };
         newState.busArrivingAtMarkers = marker.get('all_bus_numbers');
+        newState.isBusNoVisible = true;
         this.setState(newState);
     }
 
@@ -142,14 +145,16 @@ class GoogleMap extends React.Component {
             newState.startBusStopSearchedValues = [];
             newState.startBusStopValue = null;
             newState.busArrivingAtMarkers = [];
-            newState.handleBusToggle = '';
+            newState.busToggleButton = '';
             newState.routeDataArrayForStepper = [];
+            newState.isBusNoVisible = false;
             this.setState(newState);
             sourceMarker = null;
             destinationMarker = null;
             clearAllMarkersForStart();
             this.removeRoute();
             routeDataArray = [];
+            allBusStopsArray = [];
         } else {
             this.getGoogleMapsAutocomplete(value).then(
                 res => {
@@ -256,7 +261,8 @@ class GoogleMap extends React.Component {
                 mapObj.fitBounds(markerBounds);
 
                 this.setState({
-                    busArrivingAtMarkers: marker.get('all_bus_numbers')
+                    busArrivingAtMarkers: marker.get('all_bus_numbers'),
+                    isBusNoVisible: true
                 });
             }
         }
@@ -277,6 +283,7 @@ class GoogleMap extends React.Component {
             }).then(res => {
                 clearAllMarkersExceptStart();
                 routeDataArray = []
+                allBusStopsArray = res.data;
                 this.createRoute(res.data);
             }, err => {
                 console.log("error in handleBusToggle", err);
@@ -291,6 +298,16 @@ class GoogleMap extends React.Component {
         directionRendererArray = [];
     }
 
+    deselectDestinationMarker = () => {
+        destinationMarker = null;
+        clearAllMarkersExceptStart();
+        this.setState({
+            routeDataArrayForStepper: [],
+            isBusNoVisible: true
+        })
+        this.createRoute(allBusStopsArray);
+    }
+
     handleDestinationMarkerOnclick = (marker) => {
         if (destinationMarker != null && destinationMarker.get('stop_id') === marker.get('stop_id')) {
             return;
@@ -302,10 +319,13 @@ class GoogleMap extends React.Component {
         destinationMarker = marker;
         marker.setIcon(require('../images/marker_green.png'));
 
+        google.maps.event.clearInstanceListeners(marker);
+
         marker.addListener('mouseover', function () {
             const infowindow = new google.maps.InfoWindow({
                 content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
-                    + "Stop No: <b>" + marker.get('stop_id')
+                    + "Stop No: <b>" + marker.get('stop_id') + "</b><br>"
+                    + "(Click this marker to deselect destination)"
             });
             markersInfoWindow.push(infowindow);
             infowindow.open(marker.get('map'), marker);
@@ -315,13 +335,14 @@ class GoogleMap extends React.Component {
             closeAllOtherInfo()
         })
 
+        marker.addListener('click', this.deselectDestinationMarker.bind(this));
+
         markersOnMap.push(marker);
 
         clearAllMarkersExceptStart();
 
         let newState = { ...this.state };
-        newState.busArrivingAtMarkers = [];
-        newState.handleBusToggle = '';
+        newState.isBusNoVisible = false;
         this.setState(newState)
 
         let newRouteTillDest = [];
@@ -359,7 +380,7 @@ class GoogleMap extends React.Component {
                 marker.addListener('mouseover', function () {
                     const infowindow = new google.maps.InfoWindow({
                         content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
-                            + "Stop No: <b>" + marker.get('stop_id')
+                            + "Stop No: <b>" + marker.get('stop_id') + "</b>"
                     });
                     markersInfoWindow.push(infowindow);
                     infowindow.open(marker.get('map'), marker);
@@ -389,7 +410,7 @@ class GoogleMap extends React.Component {
                     marker.addListener('mouseover', function () {
                         const infowindow = new google.maps.InfoWindow({
                             content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
-                                + "Stop No: <b>" + marker.get('stop_id')
+                                + "Stop No: <b>" + marker.get('stop_id') + "</b>"
                         });
                         markersInfoWindow.push(infowindow);
                         infowindow.open(marker.get('map'), marker);
@@ -485,10 +506,10 @@ class GoogleMap extends React.Component {
                                 value={this.state.startBusStopValue}
                                 options={this.state.startBusStopSearchedValues}
                                 getOptionLabel={option => option.title}
-                                renderInput={(params) => <TextField {...params} label="Search source stop" margin="normal" variant="outlined" />}
+                                renderInput={(params) => <TextField {...params} label="Search for stops" margin="normal" variant="outlined" />}
                             />
 
-                            {sourceMarker && !destinationMarker && (
+                            {sourceMarker && !destinationMarker && this.state.isBusNoVisible && (
                                 <div style={{ width: 'inherit', overflow: 'auto' }}>
                                     <ToggleButtonGroup
                                         value={this.state.busToggleButton}
@@ -517,7 +538,7 @@ class GoogleMap extends React.Component {
                                         size="small"
                                         id="date_picker"
                                         label="Pick journey date"
-                                        format="MM/dd/yyyy"
+                                        format="dd/MM/yyyy"
                                         maxDate={moment().add(4, 'days').format('YYYY-MM-DD')}
                                         minDate={moment().format('YYYY-MM-DD')}
                                         value={this.state.dateTimeValue}
