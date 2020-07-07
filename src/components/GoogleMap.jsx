@@ -20,7 +20,7 @@ import {
     KeyboardDatePicker,
 } from '@material-ui/pickers';
 import DateFnsUtils from '@date-io/date-fns';
-import Switch from '@material-ui/core/Switch';
+// import Switch from '@material-ui/core/Switch';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -531,31 +531,32 @@ class GoogleMap extends React.Component {
                                 value={this.state.startBusStopValue}
                                 options={this.state.startBusStopSearchedValues}
                                 getOptionLabel={option => option.title}
-                                renderInput={(params) =>
-                                    <Grid container spacing={2}
-                                        direction="row"
-                                        justify="space-between"
-                                        alignItems="center"
-                                    >
-                                        <Grid item xs={10} sm={11} lg={9} md={9}>
-                                            <TextField
-                                                {...params}
-                                                label={this.state.searchValue}
-                                                margin="normal"
-                                                variant="outlined"
-                                                fullWidth
-                                                autoFocus
-                                            />
-                                        </Grid>
-                                        <Grid item xs={2} sm={1} lg={3} md={3} style={{ width: 'inherit' }}>
-                                            <Switch
-                                                defaultChecked
-                                                color="default"
-                                                onChange={this.handleOnSourceDestToggleChange.bind(this)}
-                                            />
-                                        </Grid>
-                                    </Grid>
-                                }
+                                renderInput={(params) => <TextField {...params} label="Search for stops" margin="normal" variant="outlined" />}
+                            // renderInput={(params) =>
+                            //     <Grid container spacing={2}
+                            //         direction="row"
+                            //         justify="space-between"
+                            //         alignItems="center"
+                            //     >
+                            //         <Grid item xs={10} sm={11} lg={9} md={9}>
+                            //             <TextField
+                            //                 {...params}
+                            //                 label={this.state.searchValue}
+                            //                 margin="normal"
+                            //                 variant="outlined"
+                            //                 fullWidth
+                            //                 autoFocus
+                            //             />
+                            //         </Grid>
+                            //         <Grid item xs={2} sm={1} lg={3} md={3} style={{ width: 'inherit' }}>
+                            //             <Switch
+                            //                 defaultChecked
+                            //                 color="default"
+                            //                 onChange={this.handleOnSourceDestToggleChange.bind(this)}
+                            //             />
+                            //         </Grid>
+                            //     </Grid>
+                            // }
                             />
 
                             {sourceMarker && !destinationMarker && this.state.isBusNoVisible && (
