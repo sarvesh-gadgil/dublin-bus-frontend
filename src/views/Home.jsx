@@ -9,7 +9,7 @@ class Home extends React.Component {
         return (
             <div style={{
                 width: "100%",
-                height: "650px",
+                height: "auto",
                 backgroundImage: `url(${home_banner})`,
                 backgroundSize: 'cover',
                 padding: "10px"
