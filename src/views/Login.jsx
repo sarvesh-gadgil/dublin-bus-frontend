@@ -36,7 +36,7 @@ class Login extends React.Component {
         return (
             <div style={{
                 width: "100%",
-                height: "700px",
+                height: "100vh",
                 backgroundImage: `url(${login_banner})`,
                 backgroundSize: 'cover',
                 padding: "10px"
