@@ -22,19 +22,19 @@ export const setAuthToken = (token) => {
   }
 }
 
-export const checkAuthentication = (token) => {
-  setAuthToken(token);
-  return dispatch => {
-    return axios.get(API_URL + "api/api-token-auth-check/").then(
-      res => {
-        dispatch({ type: LOGIN_ACTION, user: { user_id: res.data.user_id, first_name: res.data.first_name } });
-      },
-      errors => {
-        setAuthToken(false);
-        localStorage.removeItem("authToken");
-        dispatch({ type: LOGOUT_ACTION });
-      })
-  }
+export const checkAuthentication = (token) => async (dispatch) => {
+  await setAuthToken(token);
+  // return dispatch => {
+  return await axios.get(API_URL + "api/api-token-auth-check/").then(
+    res => {
+      dispatch({ type: LOGIN_ACTION, user: { user_id: res.data.user_id, first_name: res.data.first_name } });
+    },
+    errors => {
+      setAuthToken(false);
+      localStorage.removeItem("authToken");
+      dispatch({ type: LOGOUT_ACTION });
+    })
+  // }
 }
 
 export const logout = () => {
