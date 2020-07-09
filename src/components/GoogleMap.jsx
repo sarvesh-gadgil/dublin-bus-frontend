@@ -749,6 +749,7 @@ class GoogleMap extends React.Component {
                             <Autocomplete
                                 id="start_bus_stop_search"
                                 freeSolo
+                                autoHighlight
                                 onInputChange={this.startBusStopOnInputChange.bind(this)}
                                 onChange={this.startBusStopOnSelect.bind(this)}
                                 size="small"
