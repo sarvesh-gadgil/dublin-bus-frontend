@@ -12,23 +12,45 @@ import Avatar from '@material-ui/core/Avatar';
 import avatar_img from '../images/login_logo.png';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import login_banner from '../images/login_banner.jpg';
+import Alert from '@material-ui/lab/Alert';
+import { InputAdornment, IconButton } from "@material-ui/core";
+import Visibility from "@material-ui/icons/Visibility";
+import VisibilityOff from "@material-ui/icons/VisibilityOff";
 
 class Login extends React.Component {
-
-    state = {
-        credentials: { username: '', password: '' }
+    constructor(props) {
+        super(props)
+        if (this.props.isAuthenticated) {
+            this.props.history.push('/')
+        }
+        this.state = {
+            credentials: { username: '', password: '' },
+            disabled: false,
+            isCredentialInvalid: false,
+            isPasswordVisible: false
+        }
     }
 
-    loginUser = () => {
+    loginUser = (e) => {
+        e.preventDefault();
+        this.setState({ disabled: true })
         this.props.login(this.state.credentials.username, this.state.credentials.password).then(
-            (res) => this.props.history.push('/'),
-            (err) => { console.log(err) }
+            (res) => {
+                this.setState({ disabled: false })
+                this.props.history.push('/')
+            }, (err) => {
+                this.setState({
+                    disabled: false,
+                    isCredentialInvalid: true
+                })
+            }
         );
     }
 
     handleLoginFormValues = (event) => {
         let newState = { ...this.state };
         newState.credentials[event.target.name] = event.target.value;
+        newState.isCredentialInvalid = false;
         this.setState(newState);
     }
 
@@ -52,12 +74,15 @@ class Login extends React.Component {
                     >
                         <Grid item>
                             <CssBaseline />
-                            <Paper elevation={2} style={{ padding: "30px", height: "400px" }}>
-                                <Avatar style={{ marginLeft: "auto", marginRight: "auto", width: "50px", height: "50px" }} src={avatar_img} />
-                                <Typography component="h1" variant="h6" align="center">
+                            <Paper elevation={2} style={{ padding: "30px", height: "auto" }}>
+                                <Avatar style={{ marginLeft: "auto", marginRight: "auto", width: "40px", height: "40px" }} src={avatar_img} />
+                                <Typography variant="h6" align="center">
                                     Login to Dublin Bus
                                 </Typography>
-                                <form>
+                                {this.state.isCredentialInvalid && (
+                                    <Alert severity="error">Invalid credentials!</Alert>
+                                )}
+                                <form onSubmit={this.loginUser.bind(this)}>
                                     <TextField
                                         margin="normal"
                                         required
@@ -71,32 +96,44 @@ class Login extends React.Component {
                                         name="username"
                                         onChange={this.handleLoginFormValues.bind(this)}
                                         value={this.state.credentials.username}
-                                    // InputLabelProps={{
-                                    //     style: { color: 'gray' }
-                                    // }}
                                     />
                                     <TextField
                                         margin="normal"
                                         required
                                         fullWidth
                                         label="Password"
-                                        type="password"
+                                        type={this.state.isPasswordVisible ? "text" : "password"}
                                         id="password"
                                         size="small"
                                         variant="outlined"
                                         name="password"
                                         onChange={this.handleLoginFormValues.bind(this)}
                                         value={this.state.credentials.password}
+                                        InputProps={{
+                                            endAdornment: (
+                                                <InputAdornment position="end">
+                                                    <IconButton
+                                                        aria-label="toggle password visibility"
+                                                        onClick={() => this.setState({ isPasswordVisible: !this.state.isPasswordVisible })}
+                                                        onMouseDown={() => this.setState({ isPasswordVisible: !this.state.isPasswordVisible })}
+                                                    >
+                                                        {this.state.isPasswordVisible ? <Visibility /> : <VisibilityOff />}
+                                                    </IconButton>
+                                                </InputAdornment>
+                                            )
+                                        }}
                                     />
                                     <br />
                                     <br />
                                     <Button
-                                        type="button"
+                                        type="submit"
                                         fullWidth
                                         variant="contained"
-                                        style={{ backgroundColor: '#1c8715', color: 'white' }}
-                                        onClick={this.loginUser.bind(this)}
+                                        color="primary"
+                                        // style={{ backgroundColor: '#1c8715', color: 'white' }}
                                         size="large"
+                                        disableElevation
+                                        disabled={this.state.disabled}
                                     >
                                         Login
                                     </Button>
@@ -107,6 +144,7 @@ class Login extends React.Component {
                                         fullWidth
                                         variant="contained"
                                         size="large"
+                                        disableElevation
                                     >
                                         Register
                                     </Button>
