@@ -7,16 +7,18 @@ import home_banner from '../images/home_banner.jpg';
 class Home extends React.Component {
     render() {
         return (
-            <div style={{
-                width: "100%",
-                height: "auto",
-                backgroundImage: `url(${home_banner})`,
-                backgroundSize: 'cover',
-                padding: "10px"
-            }}>
+            <div>
                 {!this.props.isAuthenticated ? (
                     <div>
-                        <GoogleMap isAuthenticated={false} />
+                        <div style={{
+                            width: "100%",
+                            height: "auto",
+                            backgroundImage: `url(${home_banner})`,
+                            backgroundSize: 'cover',
+                            padding: "10px"
+                        }}>
+                            <GoogleMap isAuthenticated={false} />
+                        </div>
                     </div>
                 ) : (
                         <div>

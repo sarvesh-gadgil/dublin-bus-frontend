@@ -20,7 +20,11 @@ import {
     KeyboardDatePicker,
 } from '@material-ui/pickers';
 import DateFnsUtils from '@date-io/date-fns';
-// import Switch from '@material-ui/core/Switch';
+import Switch from '@material-ui/core/Switch';
+import Snackbar from '@material-ui/core/Snackbar';
+import Alert from '@material-ui/lab/Alert';
+import Tooltip from '@material-ui/core/Tooltip';
+import Divider from '@material-ui/core/Divider';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -70,6 +74,37 @@ const clearAllMarkersExceptStart = () => {
     }
 }
 
+const clearAllMarkersExceptDestination = () => {
+    if (sourceMarker != null && destinationMarker != null) {
+        for (var j = 0; j < markersOnMap.length; j++) {
+            if (markersOnMap[j].get("stop_id") !== sourceMarker.get('stop_id')
+                && markersOnMap[j].get("stop_id") !== destinationMarker.get('stop_id')) {
+                markersOnMap[j].setMap(null);
+            }
+        }
+    } else {
+        for (var i = 0; i < markersOnMap.length; i++) {
+            if (markersOnMap[i].get("stop_id") !== destinationMarker.get('stop_id')) {
+                markersOnMap[i].setMap(null);
+            }
+        }
+    }
+}
+
+const clearAllMarkersForDestination = () => {
+    if (sourceMarker === null) {
+        for (var i = 0; i < markersOnMap.length; i++) {
+            markersOnMap[i].setMap(null);
+        }
+    } else {
+        for (var j = 0; j < markersOnMap.length; j++) {
+            if (markersOnMap[j].get("stop_id") !== sourceMarker.get('stop_id')) {
+                markersOnMap[j].setMap(null);
+            }
+        }
+    }
+}
+
 class GoogleMap extends React.Component {
 
     constructor(props) {
@@ -85,7 +120,8 @@ class GoogleMap extends React.Component {
             routeDataArrayForStepper: [],
             isBusNoVisible: false,
             isDestinationToggled: true,
-            searchValue: 'Search destination stop'
+            searchValue: 'Search destination stop',
+            isAlertOpen: false
         }
         // this.mapObject = null;
         this.map = React.createRef();
@@ -118,27 +154,51 @@ class GoogleMap extends React.Component {
     }
 
     handleSourceMarkerOnclick = (marker) => {
-        if (sourceMarker != null && sourceMarker.get('stop_id') === marker.get('stop_id')) {
-            return;
+        if (!this.state.isDestinationToggled) {
+            if (sourceMarker != null && sourceMarker.get('stop_id') === marker.get('stop_id')) {
+                return;
+            }
+            if (sourceMarker != null) {
+                sourceMarker.setIcon(require('../images/marker_red.png'));
+                sourceMarker = null;
+            };
+            sourceMarker = marker;
+            marker.setIcon(require('../images/marker_black.png'));
+
+            clearAllMarkersExceptStart();
+
+            let newState = { ...this.state };
+            newState.startBusStopSearchedValues = [];
+            newState.startBusStopValue = {
+                title: marker.get('stop_name')
+                    + " (" + marker.get('stop_id') + ")"
+            };
+            newState.busArrivingAtMarkers = marker.get('all_bus_numbers');
+            newState.isBusNoVisible = true;
+            this.setState(newState);
+        } else {
+            if (destinationMarker != null && destinationMarker.get('stop_id') === marker.get('stop_id')) {
+                return;
+            }
+            if (destinationMarker != null) {
+                destinationMarker.setIcon(require('../images/marker_red.png'));
+                destinationMarker = null;
+            };
+            destinationMarker = marker;
+            marker.setIcon(require('../images/marker_green.png'));
+
+            clearAllMarkersExceptDestination();
+
+            let newState = { ...this.state };
+            newState.startBusStopSearchedValues = [];
+            newState.startBusStopValue = {
+                title: marker.get('stop_name')
+                    + " (" + marker.get('stop_id') + ")"
+            };
+            newState.busArrivingAtMarkers = marker.get('all_bus_numbers');
+            newState.isBusNoVisible = true;
+            this.setState(newState);
         }
-        if (sourceMarker != null) {
-            sourceMarker.setIcon(require('../images/marker_red.png'));
-            sourceMarker = null;
-        };
-        sourceMarker = marker;
-        marker.setIcon(require('../images/marker_black.png'));
-
-        clearAllMarkersExceptStart();
-
-        let newState = { ...this.state };
-        newState.startBusStopSearchedValues = [];
-        newState.startBusStopValue = {
-            title: marker.get('stop_name')
-                + " (" + marker.get('stop_id') + ")"
-        };
-        newState.busArrivingAtMarkers = marker.get('all_bus_numbers');
-        newState.isBusNoVisible = true;
-        this.setState(newState);
     }
 
     startBusStopOnInputChange = (event, value, reason) => {
@@ -188,7 +248,11 @@ class GoogleMap extends React.Component {
             if (!value.fromDB) {
                 this.getGoogleMapsNearestStops(value.id).then(
                     res => {
-                        clearAllMarkersForStart();
+                        if (!this.state.isDestinationToggled) {
+                            clearAllMarkersForStart();
+                        } else {
+                            clearAllMarkersForDestination();
+                        }
                         this.markersOnMap = [];
                         var markerBounds = new google.maps.LatLngBounds();
                         for (var i = 0; i < res.data.length; i++) {
@@ -241,24 +305,46 @@ class GoogleMap extends React.Component {
                         console.log('error in startBusStopOnSelect', err)
                     })
             } else {
-                clearAllMarkersForStart();
+                if (!this.state.isDestinationToggled) {
+                    clearAllMarkersForStart();
+                } else {
+                    clearAllMarkersForDestination();
+                }
 
                 var markerBounds = new google.maps.LatLngBounds();
-                const marker = new google.maps.Marker({
-                    position: { lat: parseFloat(value.stop_lat), lng: parseFloat(value.stop_lng) },
-                    map: mapObj,
-                    icon: require('../images/marker_black.png'),
-                    animation: google.maps.Animation.DROP,
-                    stop_id: value.id,
-                    stop_name: value.title,
-                    all_bus_numbers: value.all_bus_numbers
-                });
+                let marker = null;
+                if (!this.state.isDestinationToggled) {
+                    marker = new google.maps.Marker({
+                        position: { lat: parseFloat(value.stop_lat), lng: parseFloat(value.stop_lng) },
+                        map: mapObj,
+                        icon: require('../images/marker_black.png'),
+                        animation: google.maps.Animation.DROP,
+                        stop_id: value.id,
+                        stop_name: value.title,
+                        all_bus_numbers: value.all_bus_numbers
+                    });
+                } else {
+                    marker = new google.maps.Marker({
+                        position: { lat: parseFloat(value.stop_lat), lng: parseFloat(value.stop_lng) },
+                        map: mapObj,
+                        icon: require('../images/marker_green.png'),
+                        animation: google.maps.Animation.DROP,
+                        stop_id: value.id,
+                        stop_name: value.title,
+                        all_bus_numbers: value.all_bus_numbers
+                    });
+                }
 
                 markerBounds.extend({ lat: parseFloat(value.stop_lat), lng: parseFloat(value.stop_lng) })
 
                 this.markersOnMap = [];
                 markersOnMap.push(marker);
-                sourceMarker = marker;
+
+                if (!this.state.isDestinationToggled) {
+                    sourceMarker = marker;
+                } else {
+                    destinationMarker = marker;
+                }
 
                 mapObj.fitBounds(markerBounds);
 
@@ -275,15 +361,26 @@ class GoogleMap extends React.Component {
             this.setState({
                 busToggleButton: newToggleValue
             })
+            let stop_id = null;
+            if (!this.state.isDestinationToggled) {
+                stop_id = sourceMarker.get('stop_id');
+            } else {
+                stop_id = destinationMarker.get('stop_id');
+            }
             const busNoAndDirection = newToggleValue.split('(');
             axios.get(API_URL + "api/bus/get/routes", {
                 params: {
                     bus_number: busNoAndDirection[0].trim(),
                     direction: busNoAndDirection[1].replace(")", "").trim(),
-                    stop_id: sourceMarker.get('stop_id')
+                    stop_id,
+                    is_destination_toggled: this.state.isDestinationToggled
                 }
             }).then(res => {
-                clearAllMarkersExceptStart();
+                if (!this.state.isDestinationToggled) {
+                    clearAllMarkersExceptStart();
+                } else {
+                    clearAllMarkersExceptDestination();
+                }
                 routeDataArray = []
                 allBusStopsArray = res.data;
                 this.createRoute(res.data);
@@ -301,8 +398,13 @@ class GoogleMap extends React.Component {
     }
 
     deselectDestinationMarker = () => {
-        destinationMarker = null;
-        clearAllMarkersExceptStart();
+        if (!this.state.isDestinationToggled) {
+            destinationMarker = null;
+            clearAllMarkersExceptStart();
+        } else {
+            sourceMarker = null;
+            clearAllMarkersExceptDestination();
+        }
         this.setState({
             routeDataArrayForStepper: [],
             isBusNoVisible: true
@@ -311,102 +413,125 @@ class GoogleMap extends React.Component {
     }
 
     handleDestinationMarkerOnclick = (marker) => {
-        if (destinationMarker != null && destinationMarker.get('stop_id') === marker.get('stop_id')) {
-            return;
-        }
-        if (destinationMarker != null) {
-            destinationMarker.setIcon(require('../images/marker_red.png'));
-            destinationMarker = null;
-        };
-        destinationMarker = marker;
-        marker.setIcon(require('../images/marker_green.png'));
-
-        google.maps.event.clearInstanceListeners(marker);
-
-        marker.addListener('mouseover', function () {
-            const infowindow = new google.maps.InfoWindow({
-                content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
-                    + "Stop No: <b>" + marker.get('stop_id') + "</b><br>"
-                    + "(Click this marker to deselect destination)"
-            });
-            markersInfoWindow.push(infowindow);
-            infowindow.open(marker.get('map'), marker);
-        });
-
-        marker.addListener('mouseout', function () {
-            closeAllOtherInfo()
-        })
-
-        marker.addListener('click', this.deselectDestinationMarker.bind(this));
-
-        markersOnMap.push(marker);
-
-        clearAllMarkersExceptStart();
-
-        let newState = { ...this.state };
-        newState.isBusNoVisible = false;
-        this.setState(newState)
-
-        let newRouteTillDest = [];
-        for (var i = 0; i < routeDataArray.length; i++) {
-            if (routeDataArray[i].stop_id === destinationMarker.get('stop_id')) {
-                newRouteTillDest.push(routeDataArray[i]);
-                break;
-            } else {
-                newRouteTillDest.push(routeDataArray[i]);
+        if (!this.state.isDestinationToggled) {
+            if (destinationMarker != null && destinationMarker.get('stop_id') === marker.get('stop_id')) {
+                return;
             }
+            if (destinationMarker != null) {
+                destinationMarker.setIcon(require('../images/marker_red.png'));
+                destinationMarker = null;
+            };
+            destinationMarker = marker;
+            marker.setIcon(require('../images/marker_green.png'));
+
+            google.maps.event.clearInstanceListeners(marker);
+
+            marker.addListener('mouseover', function () {
+                const infowindow = new google.maps.InfoWindow({
+                    content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
+                        + "Stop No: <b>" + marker.get('stop_id') + "</b><br>"
+                        + "(Click this marker to deselect destination)"
+                });
+                markersInfoWindow.push(infowindow);
+                infowindow.open(marker.get('map'), marker);
+            });
+
+            marker.addListener('mouseout', function () {
+                closeAllOtherInfo()
+            })
+
+            marker.addListener('click', this.deselectDestinationMarker.bind(this));
+
+            markersOnMap.push(marker);
+
+            clearAllMarkersExceptStart();
+
+            let newState = { ...this.state };
+            newState.isBusNoVisible = false;
+            this.setState(newState)
+
+            let newRouteTillDest = [];
+            for (var i = 0; i < routeDataArray.length; i++) {
+                if (routeDataArray[i].stop_id === destinationMarker.get('stop_id')) {
+                    newRouteTillDest.push(routeDataArray[i]);
+                    break;
+                } else {
+                    newRouteTillDest.push(routeDataArray[i]);
+                }
+            }
+            this.setState({
+                routeDataArrayForStepper: newRouteTillDest
+            })
+            this.createRoute(newRouteTillDest)
+        } else {
+            if (sourceMarker != null && sourceMarker.get('stop_id') === marker.get('stop_id')) {
+                return;
+            }
+            if (sourceMarker != null) {
+                sourceMarker.setIcon(require('../images/marker_red.png'));
+                sourceMarker = null;
+            };
+            sourceMarker = marker;
+            marker.setIcon(require('../images/marker_black.png'));
+
+            google.maps.event.clearInstanceListeners(marker);
+
+            marker.addListener('mouseover', function () {
+                const infowindow = new google.maps.InfoWindow({
+                    content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
+                        + "Stop No: <b>" + marker.get('stop_id') + "</b><br>"
+                        + "(Click this marker to deselect source)"
+                });
+                markersInfoWindow.push(infowindow);
+                infowindow.open(marker.get('map'), marker);
+            });
+
+            marker.addListener('mouseout', function () {
+                closeAllOtherInfo()
+            })
+
+            marker.addListener('click', this.deselectDestinationMarker.bind(this));
+
+            markersOnMap.push(marker);
+
+            clearAllMarkersExceptDestination();
+
+            let newState = { ...this.state };
+            newState.isBusNoVisible = false;
+            this.setState(newState)
+
+            let newRouteTillDest = [];
+            for (let i = 0; i < routeDataArray.length; i++) {
+                if (routeDataArray[i].stop_id === sourceMarker.get('stop_id')) {
+                    newRouteTillDest.push(routeDataArray[i]);
+                    break;
+                } else {
+                    newRouteTillDest.push(routeDataArray[i]);
+                }
+            }
+            this.setState({
+                routeDataArrayForStepper: newRouteTillDest.slice().reverse()
+            })
+            this.createRoute(newRouteTillDest)
         }
-        this.setState({
-            routeDataArrayForStepper: newRouteTillDest
-        })
-        this.createRoute(newRouteTillDest)
     }
 
     createRoute = (res) => {
         this.removeRoute();
         routeDataArray = res;
 
-        // Create markers except start
-        if (destinationMarker === null) {
-            for (var m = 1; m < res.length; m++) {
-                const marker = new google.maps.Marker({
-                    position: { lat: parseFloat(res[m].stop_lat), lng: parseFloat(res[m].stop_lng) },
-                    map: mapObj,
-                    icon: require('../images/marker_red.png'),
-                    animation: google.maps.Animation.DROP,
-                    stop_id: res[m].stop_id,
-                    stop_name: res[m].stop_name,
-                    program_number: res[m].program_number
-                });
-
-                marker.addListener('mouseover', function () {
-                    const infowindow = new google.maps.InfoWindow({
-                        content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
-                            + "Stop No: <b>" + marker.get('stop_id') + "</b>"
-                    });
-                    markersInfoWindow.push(infowindow);
-                    infowindow.open(marker.get('map'), marker);
-                });
-
-                marker.addListener('mouseout', function () {
-                    closeAllOtherInfo()
-                })
-
-                marker.addListener('click', this.handleDestinationMarkerOnclick.bind(this, marker));
-
-                markersOnMap.push(marker);
-            }
-        } else {
-            for (var d = 1; d < res.length; d++) {
-                if (res[d].stop_id !== destinationMarker.get('stop_id')) {
+        if (!this.state.isDestinationToggled) {
+            // Create markers except source
+            if (destinationMarker === null) {
+                for (var m = 1; m < res.length; m++) {
                     const marker = new google.maps.Marker({
-                        position: { lat: parseFloat(res[d].stop_lat), lng: parseFloat(res[d].stop_lng) },
+                        position: { lat: parseFloat(res[m].stop_lat), lng: parseFloat(res[m].stop_lng) },
                         map: mapObj,
                         icon: require('../images/marker_red.png'),
                         animation: google.maps.Animation.DROP,
-                        stop_id: res[d].stop_id,
-                        stop_name: res[d].stop_name,
-                        program_number: res[d].program_number
+                        stop_id: res[m].stop_id,
+                        stop_name: res[m].stop_name,
+                        program_number: res[m].program_number
                     });
 
                     marker.addListener('mouseover', function () {
@@ -421,7 +546,98 @@ class GoogleMap extends React.Component {
                     marker.addListener('mouseout', function () {
                         closeAllOtherInfo()
                     })
+
+                    marker.addListener('click', this.handleDestinationMarkerOnclick.bind(this, marker));
+
                     markersOnMap.push(marker);
+                }
+            } else {
+                for (var d = 1; d < res.length; d++) {
+                    if (res[d].stop_id !== destinationMarker.get('stop_id')) {
+                        const marker = new google.maps.Marker({
+                            position: { lat: parseFloat(res[d].stop_lat), lng: parseFloat(res[d].stop_lng) },
+                            map: mapObj,
+                            icon: require('../images/marker_red.png'),
+                            animation: google.maps.Animation.DROP,
+                            stop_id: res[d].stop_id,
+                            stop_name: res[d].stop_name,
+                            program_number: res[d].program_number
+                        });
+
+                        marker.addListener('mouseover', function () {
+                            const infowindow = new google.maps.InfoWindow({
+                                content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
+                                    + "Stop No: <b>" + marker.get('stop_id') + "</b>"
+                            });
+                            markersInfoWindow.push(infowindow);
+                            infowindow.open(marker.get('map'), marker);
+                        });
+
+                        marker.addListener('mouseout', function () {
+                            closeAllOtherInfo()
+                        })
+                        markersOnMap.push(marker);
+                    }
+                }
+            }
+        } else {
+            // Create markers except dest
+            if (sourceMarker === null) {
+                for (let m = 1; m < res.length; m++) {
+                    const marker = new google.maps.Marker({
+                        position: { lat: parseFloat(res[m].stop_lat), lng: parseFloat(res[m].stop_lng) },
+                        map: mapObj,
+                        icon: require('../images/marker_red.png'),
+                        animation: google.maps.Animation.DROP,
+                        stop_id: res[m].stop_id,
+                        stop_name: res[m].stop_name,
+                        program_number: res[m].program_number
+                    });
+
+                    marker.addListener('mouseover', function () {
+                        const infowindow = new google.maps.InfoWindow({
+                            content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
+                                + "Stop No: <b>" + marker.get('stop_id') + "</b>"
+                        });
+                        markersInfoWindow.push(infowindow);
+                        infowindow.open(marker.get('map'), marker);
+                    });
+
+                    marker.addListener('mouseout', function () {
+                        closeAllOtherInfo()
+                    })
+
+                    marker.addListener('click', this.handleDestinationMarkerOnclick.bind(this, marker));
+
+                    markersOnMap.push(marker);
+                }
+            } else {
+                for (let d = 1; d < res.length; d++) {
+                    if (res[d].stop_id !== sourceMarker.get('stop_id')) {
+                        const marker = new google.maps.Marker({
+                            position: { lat: parseFloat(res[d].stop_lat), lng: parseFloat(res[d].stop_lng) },
+                            map: mapObj,
+                            icon: require('../images/marker_red.png'),
+                            animation: google.maps.Animation.DROP,
+                            stop_id: res[d].stop_id,
+                            stop_name: res[d].stop_name,
+                            program_number: res[d].program_number
+                        });
+
+                        marker.addListener('mouseover', function () {
+                            const infowindow = new google.maps.InfoWindow({
+                                content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
+                                    + "Stop No: <b>" + marker.get('stop_id') + "</b>"
+                            });
+                            markersInfoWindow.push(infowindow);
+                            infowindow.open(marker.get('map'), marker);
+                        });
+
+                        marker.addListener('mouseout', function () {
+                            closeAllOtherInfo()
+                        })
+                        markersOnMap.push(marker);
+                    }
                 }
             }
         }
@@ -493,7 +709,8 @@ class GoogleMap extends React.Component {
         } else {
             newState.searchValue = "Search source stop"
         }
-        newState.startBusStopValue = { title: null };
+        newState.startBusStopValue = { title: '' };
+        newState.isAlertOpen = true;
         this.setState(newState);
         sourceMarker = null;
         destinationMarker = null;
@@ -501,6 +718,13 @@ class GoogleMap extends React.Component {
         this.removeRoute();
         routeDataArray = [];
         allBusStopsArray = [];
+    }
+
+    closeAlert = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        this.setState({ isAlertOpen: false })
     }
 
     render() {
@@ -513,7 +737,7 @@ class GoogleMap extends React.Component {
                 >
                     <Grid item xs={12} sm={12} lg={3} md={3}>
                         <CssBaseline />
-                        <Paper elevation={2} style={{ padding: "10px", height: "inherit", backgroundColor: ("rgb(250,251,252)"), maxHeight: "600px" }}>
+                        <Paper elevation={2} style={{ padding: "10px", height: "inherit", backgroundColor: ("rgb(250,251,252)"), maxHeight: "750px" }}>
                             <Typography>
                                 <b style={{ fontSize: "29px" }}>Welcome to Dublin Bus</b>
                             </Typography>
@@ -525,41 +749,44 @@ class GoogleMap extends React.Component {
                             <Autocomplete
                                 id="start_bus_stop_search"
                                 freeSolo
+                                autoHighlight
                                 onInputChange={this.startBusStopOnInputChange.bind(this)}
                                 onChange={this.startBusStopOnSelect.bind(this)}
                                 size="small"
                                 value={this.state.startBusStopValue}
                                 options={this.state.startBusStopSearchedValues}
                                 getOptionLabel={option => option.title}
-                                renderInput={(params) => <TextField {...params} label="Search for stops" margin="normal" variant="outlined" />}
-                            // renderInput={(params) =>
-                            //     <Grid container spacing={2}
-                            //         direction="row"
-                            //         justify="space-between"
-                            //         alignItems="center"
-                            //     >
-                            //         <Grid item xs={10} sm={11} lg={9} md={9}>
-                            //             <TextField
-                            //                 {...params}
-                            //                 label={this.state.searchValue}
-                            //                 margin="normal"
-                            //                 variant="outlined"
-                            //                 fullWidth
-                            //                 autoFocus
-                            //             />
-                            //         </Grid>
-                            //         <Grid item xs={2} sm={1} lg={3} md={3} style={{ width: 'inherit' }}>
-                            //             <Switch
-                            //                 defaultChecked
-                            //                 color="default"
-                            //                 onChange={this.handleOnSourceDestToggleChange.bind(this)}
-                            //             />
-                            //         </Grid>
-                            //     </Grid>
-                            // }
+                                // renderInput={(params) => <TextField {...params} label="Search for stops" margin="normal" variant="outlined" />}
+                                renderInput={(params) =>
+                                    <Grid container spacing={2}
+                                        direction="row"
+                                        justify="space-between"
+                                        alignItems="center"
+                                    >
+                                        <Grid item xs={10} sm={11} lg={9} md={9}>
+                                            <TextField
+                                                {...params}
+                                                label={this.state.searchValue}
+                                                margin="normal"
+                                                variant="outlined"
+                                                fullWidth
+                                                autoFocus
+                                            />
+                                        </Grid>
+                                        <Grid item xs={2} sm={1} lg={3} md={3} style={{ width: 'inherit' }}>
+                                            <Tooltip title={<span style={{ fontSize: "12px" }}>Toggle source or destination stop</span>}>
+                                                <Switch
+                                                    defaultChecked
+                                                    color="default"
+                                                    onChange={this.handleOnSourceDestToggleChange.bind(this)}
+                                                />
+                                            </Tooltip>
+                                        </Grid>
+                                    </Grid>
+                                }
                             />
 
-                            {sourceMarker && !destinationMarker && this.state.isBusNoVisible && (
+                            {this.state.isBusNoVisible && (
                                 <div style={{ width: 'inherit', overflow: 'auto' }}>
                                     <ToggleButtonGroup
                                         value={this.state.busToggleButton}
@@ -567,7 +794,6 @@ class GoogleMap extends React.Component {
                                         onChange={this.handleBusToggle.bind(this)}
                                     >
                                         {this.state.busArrivingAtMarkers.map((bus, index) =>
-
                                             <ToggleButton
                                                 value={bus.bus_number + "(" + bus.direction + ")"}
                                                 style={{ color: 'black' }} key={index}
@@ -575,6 +801,23 @@ class GoogleMap extends React.Component {
                                                 {bus.bus_number + "(" + bus.direction + ")"}
                                             </ToggleButton>
                                         )}
+                                    </ToggleButtonGroup>
+                                </div>
+                            )}
+
+                            {sourceMarker !== null && destinationMarker !== null && (
+                                <div style={{ width: 'inherit', overflow: 'auto' }}>
+                                    <ToggleButtonGroup
+                                        value={this.state.busToggleButton}
+                                        exclusive
+                                        onChange={this.handleBusToggle.bind(this)}
+                                    >
+                                        <ToggleButton
+                                            value={this.state.busToggleButton}
+                                            style={{ color: 'black' }}
+                                        >
+                                            {this.state.busToggleButton}
+                                        </ToggleButton>
                                     </ToggleButtonGroup>
                                 </div>
                             )}
@@ -612,26 +855,44 @@ class GoogleMap extends React.Component {
                                     />
                                 </Grid>
                             </MuiPickersUtilsProvider>
+
                             {sourceMarker && destinationMarker && (
-                                <div style={{ height: '280px', overflow: 'auto' }}>
+                                <div style={{ height: '325px', overflow: 'auto' }}>
+                                    <Divider variant="middle" />
+                                    <br />
+                                    <Typography variant="button">
+                                        Total travel time:
+                                    </Typography>
+                                    <br />
+                                    <Divider variant="middle" />
                                     <Stepper orientation="vertical" style={{ backgroundColor: "transparent" }}>
                                         {this.state.routeDataArrayForStepper.map((busData, index) => (
                                             <Step key={index} active>
                                                 <StepLabel>{busData.stop_name + "(" + busData.stop_id + ")"}</StepLabel>
                                                 <StepContent>
-                                                    <Typography>Estimated travel time:</Typography>
+                                                    <Typography variant="caption">Estimated travel time:</Typography>
                                                 </StepContent>
                                             </Step>
                                         ))}
                                     </Stepper>
                                 </div>
                             )}
+                            <Snackbar
+                                open={this.state.isAlertOpen}
+                                autoHideDuration={3000}
+                                onClose={this.closeAlert.bind(this)}
+                                anchorOrigin={{ horizontal: "left", vertical: "bottom" }}
+                            >
+                                <Alert onClose={this.closeAlert.bind(this)} severity="info">
+                                    Switched to {this.state.searchValue}
+                                </Alert>
+                            </Snackbar>
                         </Paper>
                     </Grid>
                     <Grid item xs={12} sm={12} lg={9} md={9}>
                         <CssBaseline />
                         <Paper elevation={2} style={{ padding: "3px", height: "inherit" }}>
-                            <div id="map" ref={this.map} style={{ width: 'inherit', height: '600px' }}></div>
+                            <div id="map" ref={this.map} style={{ width: 'inherit', height: '700px' }}></div>
                         </Paper>
                     </Grid>
                 </Grid>
