@@ -125,7 +125,10 @@ class GoogleMap extends React.Component {
             isBusNoVisible: false,
             isDestinationToggled: true,
             searchValue: 'Search destination stop',
-            isAlertOpen: false
+            isAlertOpen: false,
+            latestRoutesForUser: [],
+            activeIdForUsers: 0,
+            isLatestRoutesDisabled: false
         }
         // this.mapObject = null;
         this.map = React.createRef();
@@ -141,8 +144,26 @@ class GoogleMap extends React.Component {
         });
     }
 
+    getLatestRoutes = () => {
+        axios.get(API_URL + "api/routes/getall/latest/" + this.props.user.user_id).then(
+            res => this.setState({ latestRoutesForUser: res.data }),
+            err => { console.log("error in getLatestRoutes", err) }
+        )
+    }
+
+    componentWillMount() {
+        sourceMarker = null;
+        destinationMarker = null;
+        directionRendererArray = [];
+        routeDataArray = [];
+        allBusStopsArray = [];
+    }
+
     componentDidMount() {
         this.initMap();
+        if (this.props.isAuthenticated) {
+            this.getLatestRoutes();
+        }
     }
 
     getGoogleMapsAutocomplete = (query) => {
@@ -214,6 +235,8 @@ class GoogleMap extends React.Component {
             newState.busToggleButton = '';
             newState.routeDataArrayForStepper = [];
             newState.isBusNoVisible = false;
+            newState.isLatestRoutesDisabled = false;
+            newState.activeIdForUsers = 0;
             this.setState(newState);
             sourceMarker = null;
             destinationMarker = null;
@@ -222,28 +245,51 @@ class GoogleMap extends React.Component {
             routeDataArray = [];
             allBusStopsArray = [];
         } else {
-            this.getGoogleMapsAutocomplete(value).then(
-                res => {
-                    let newState = { ...this.state };
-                    if (destinationMarker != null) {
-                        let filteredResult = [];
-                        for (var i = 0; i < res.data.length; i++) {
-                            if (res.data[i].fromDB) {
-                                if (res.data[i].id !== destinationMarker.get('stop_id')) {
-                                    filteredResult.push(res.data[i]);
-                                }
-                            } else {
-                                filteredResult.push(res.data[i]);
-                            }
-                        }
-                        newState.startBusStopSearchedValues = filteredResult;
-                    } else {
+            console.log(value)
+            if (value.length > 3) {
+                this.getGoogleMapsAutocomplete(value).then(
+                    res => {
+                        console.log(res.data.length)
+                        let newState = { ...this.state };
                         newState.startBusStopSearchedValues = res.data;
-                    }
-                    this.setState(newState);
-                }, err => {
-                    console.log('error in startBusStopOnInputChange', err)
-                })
+                        newState.isLatestRoutesDisabled = true;
+                        if (this.state.activeIdForUsers !== 0) {
+                            newState.startBusStopSearchedValues = [];
+                            newState.startBusStopValue = null;
+                            newState.busArrivingAtMarkers = [];
+                            newState.busToggleButton = '';
+                            newState.routeDataArrayForStepper = [];
+                            newState.isBusNoVisible = false;
+                            newState.activeIdForUsers = 0;
+                            sourceMarker = null;
+                            destinationMarker = null;
+                            clearAllMarkersForStart();
+                            this.removeRoute();
+                            routeDataArray = [];
+                            allBusStopsArray = [];
+                        }
+                        this.setState(newState);
+                    }, err => {
+                        console.log('error in startBusStopOnInputChange', err)
+                    })
+            } else {
+                let newState = { ...this.state };
+                newState.startBusStopSearchedValues = [];
+                newState.startBusStopValue = null;
+                newState.busArrivingAtMarkers = [];
+                newState.busToggleButton = '';
+                newState.routeDataArrayForStepper = [];
+                newState.isBusNoVisible = false;
+                newState.isLatestRoutesDisabled = false;
+                newState.activeIdForUsers = 0;
+                this.setState(newState);
+                sourceMarker = null;
+                destinationMarker = null;
+                clearAllMarkersForStart();
+                this.removeRoute();
+                routeDataArray = [];
+                allBusStopsArray = [];
+            }
         }
     }
 
@@ -645,7 +691,10 @@ class GoogleMap extends React.Component {
                 }
             }
         }
+        this.createRouteUsingMultipleWaypoints(res);
+    }
 
+    createRouteUsingMultipleWaypoints = (res) => {
         // Ref for below code: https://stackoverflow.com/questions/8779886/exceed-23-waypoint-per-request-limit-on-google-directions-api-business-work-lev
         var directionsService = new google.maps.DirectionsService();
 
@@ -706,6 +755,7 @@ class GoogleMap extends React.Component {
         newState.busArrivingAtMarkers = [];
         newState.busToggleButton = '';
         newState.routeDataArrayForStepper = [];
+        newState.activeIdForUsers = 0;
         newState.isBusNoVisible = false;
         newState.isDestinationToggled = !this.state.isDestinationToggled
         if (newState.isDestinationToggled) {
@@ -715,6 +765,7 @@ class GoogleMap extends React.Component {
         }
         newState.startBusStopValue = { title: '' };
         newState.isAlertOpen = true;
+        newState.isLatestRoutesDisabled = false;
         this.setState(newState);
         sourceMarker = null;
         destinationMarker = null;
@@ -731,11 +782,103 @@ class GoogleMap extends React.Component {
         this.setState({ isAlertOpen: false })
     }
 
+    handleOnclickForLatestRoutes = (id, bus_number, direction) => {
+        if (this.state.activeIdForUsers !== id) {
+            axios.get(API_URL + "api/routes/getall/waypoints/" + id).then(
+                resp => {
+                    const res = resp.data;
+
+                    // Reset everything
+                    let newState = { ...this.state };
+                    newState.startBusStopSearchedValues = [];
+                    newState.busArrivingAtMarkers = [];
+                    newState.busToggleButton = '';
+                    newState.routeDataArrayForStepper = [];
+                    // newState.startBusStopValue = { title: '' };
+                    newState.isBusNoVisible = false;
+                    this.setState(newState);
+                    sourceMarker = null;
+                    destinationMarker = null;
+                    clearAllMarkersForStart();
+                    this.removeRoute();
+                    routeDataArray = [];
+                    allBusStopsArray = [];
+                    this.markersOnMap = [];
+
+                    // create markers
+                    for (let d = 0; d < res.length; d++) {
+                        let marker = null;
+                        if (d === 0) {
+                            marker = new google.maps.Marker({
+                                position: { lat: parseFloat(res[d].stop_lat), lng: parseFloat(res[d].stop_lng) },
+                                map: mapObj,
+                                icon: require('../images/marker_black.png'),
+                                animation: google.maps.Animation.DROP,
+                                stop_id: res[d].stop_id,
+                                stop_name: res[d].stop_name,
+                                program_number: res[d].program_number
+                            });
+                            sourceMarker = marker;
+                        } else if (d === res.length - 1) {
+                            marker = new google.maps.Marker({
+                                position: { lat: parseFloat(res[d].stop_lat), lng: parseFloat(res[d].stop_lng) },
+                                map: mapObj,
+                                icon: require('../images/marker_green.png'),
+                                animation: google.maps.Animation.DROP,
+                                stop_id: res[d].stop_id,
+                                stop_name: res[d].stop_name,
+                                program_number: res[d].program_number
+                            });
+                            destinationMarker = marker;
+                        } else {
+                            marker = new google.maps.Marker({
+                                position: { lat: parseFloat(res[d].stop_lat), lng: parseFloat(res[d].stop_lng) },
+                                map: mapObj,
+                                icon: require('../images/marker_red.png'),
+                                animation: google.maps.Animation.DROP,
+                                stop_id: res[d].stop_id,
+                                stop_name: res[d].stop_name,
+                                program_number: res[d].program_number
+                            });
+                        }
+                        marker.addListener('mouseover', function () {
+                            const infowindow = new google.maps.InfoWindow({
+                                content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
+                                    + "Stop No: <b>" + marker.get('stop_id') + "</b>"
+                            });
+                            markersInfoWindow.push(infowindow);
+                            infowindow.open(marker.get('map'), marker);
+                        });
+
+                        marker.addListener('mouseout', function () {
+                            closeAllOtherInfo()
+                        })
+                        markersOnMap.push(marker);
+                    }
+                    this.setState({
+                        busToggleButton: bus_number + "(" + direction + ")",
+                        routeDataArrayForStepper: res,
+                        activeIdForUsers: id
+                    })
+
+                    // create route
+                    this.createRouteUsingMultipleWaypoints(res);
+                },
+                err => { console.log("error in handleOnclickForLatestRoutes", err) }
+            )
+        }
+    }
+
     render() {
         return (
             <div style={{ flexGrow: 1 }}>
                 {this.props.isAuthenticated && (
-                    <RouteSuggestion user={this.props.user} />
+                    <RouteSuggestion
+                        user={this.props.user}
+                        latestRoutesForUser={this.state.latestRoutesForUser}
+                        handleOnclickForLatestRoutes={this.handleOnclickForLatestRoutes}
+                        isLatestRoutesDisabled={this.state.isLatestRoutesDisabled}
+                    />
                 )}
                 <Grid container spacing={2}
                     direction="row"

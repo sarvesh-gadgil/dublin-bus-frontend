@@ -25,13 +25,20 @@ const welcomeMessageAndSuggestion = (props) => {
             </Typography>
             <Paper elevation={0} style={{ padding: "10px", backgroundColor: "transparent" }}>
                 <div style={{ overflow: "auto" }}>
-                    <Typography color="textSecondary">
+                    {/* <Typography color="textSecondary">
                         Recent Routes
-                    </Typography>
+                    </Typography> */}
                     <ButtonGroup variant="contained">
-                        <Button style={{ textTransform: "none", backgroundColor: "rgb(19,19,19)", color: "white" }}>Limekiln Ave (4392)<ArrowRightAltSharpIcon fontSize="small" /> St. James's Road (2462)</Button>
-                        <Button style={{ textTransform: "none", backgroundColor: "rgb(19,19,19)", color: "white" }}>Limekiln Ave (4392)<ArrowRightAltSharpIcon fontSize="small" /> St. James's Road (2462)</Button>
-                        <Button style={{ textTransform: "none", backgroundColor: "rgb(19,19,19)", color: "white" }}>Limekiln Ave (4392)<ArrowRightAltSharpIcon fontSize="small" /> St. James's Road (2462)</Button>
+                        {props.latestRoutesForUser.map((route, index) =>
+                            <Button
+                                color="primary"
+                                key={index}
+                                disabled={props.isLatestRoutesDisabled}
+                                onClick={() => props.handleOnclickForLatestRoutes(route.id, route.route, route.direction)}
+                            >
+                                {route.from}<ArrowRightAltSharpIcon fontSize="small" />{route.to}
+                            </Button>
+                        )}
                     </ButtonGroup>
                 </div>
             </Paper>
