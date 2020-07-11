@@ -25,6 +25,10 @@ import Snackbar from '@material-ui/core/Snackbar';
 import Alert from '@material-ui/lab/Alert';
 import Tooltip from '@material-ui/core/Tooltip';
 import Divider from '@material-ui/core/Divider';
+import RouteSuggestion from './RouteSuggestion';
+import { connect } from 'react-redux';
+import { withRouter } from 'react-router-dom';
+import DirectionsBusIcon from '@material-ui/icons/DirectionsBus';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -730,6 +734,9 @@ class GoogleMap extends React.Component {
     render() {
         return (
             <div style={{ flexGrow: 1 }}>
+                {this.props.isAuthenticated && (
+                    <RouteSuggestion user={this.props.user} />
+                )}
                 <Grid container spacing={2}
                     direction="row"
                     justify="space-between"
@@ -798,7 +805,7 @@ class GoogleMap extends React.Component {
                                                 value={bus.bus_number + "(" + bus.direction + ")"}
                                                 style={{ color: 'black' }} key={index}
                                             >
-                                                {bus.bus_number + "(" + bus.direction + ")"}
+                                                <DirectionsBusIcon fontSize="small" /> {bus.bus_number + "(" + bus.direction + ")"}
                                             </ToggleButton>
                                         )}
                                     </ToggleButtonGroup>
@@ -816,7 +823,7 @@ class GoogleMap extends React.Component {
                                             value={this.state.busToggleButton}
                                             style={{ color: 'black' }}
                                         >
-                                            {this.state.busToggleButton}
+                                            <DirectionsBusIcon fontSize="small" /> {this.state.busToggleButton}
                                         </ToggleButton>
                                     </ToggleButtonGroup>
                                 </div>
@@ -901,4 +908,11 @@ class GoogleMap extends React.Component {
     }
 }
 
-export default GoogleMap;
+const mapStateToProps = (state) => {
+    return {
+        isAuthenticated: state.isAuthenticated,
+        user: state.user
+    }
+}
+
+export default withRouter(connect(mapStateToProps)(GoogleMap));

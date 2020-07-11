@@ -76,7 +76,7 @@ class Login extends React.Component {
                             <CssBaseline />
                             <Paper elevation={2} style={{ padding: "30px", height: "auto" }}>
                                 <Avatar style={{ marginLeft: "auto", marginRight: "auto", width: "40px", height: "40px" }} src={avatar_img} />
-                                <Typography variant="h6" align="center">
+                                <Typography variant="h6" align="center" style={{ fontFamily: "Tahoma" }}>
                                     Login to Dublin Bus
                                 </Typography>
                                 {this.state.isCredentialInvalid && (
