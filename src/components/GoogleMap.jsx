@@ -132,6 +132,11 @@ class GoogleMap extends React.Component {
         }
         // this.mapObject = null;
         this.map = React.createRef();
+        sourceMarker = null;
+        destinationMarker = null;
+        directionRendererArray = [];
+        routeDataArray = [];
+        allBusStopsArray = [];
     }
 
     initMap = () => {
@@ -149,14 +154,6 @@ class GoogleMap extends React.Component {
             res => this.setState({ latestRoutesForUser: res.data }),
             err => { console.log("error in getLatestRoutes", err) }
         )
-    }
-
-    componentWillMount() {
-        sourceMarker = null;
-        destinationMarker = null;
-        directionRendererArray = [];
-        routeDataArray = [];
-        allBusStopsArray = [];
     }
 
     componentDidMount() {
@@ -245,11 +242,9 @@ class GoogleMap extends React.Component {
             routeDataArray = [];
             allBusStopsArray = [];
         } else {
-            console.log(value)
             if (value.length > 3) {
                 this.getGoogleMapsAutocomplete(value).then(
                     res => {
-                        console.log(res.data.length)
                         let newState = { ...this.state };
                         newState.startBusStopSearchedValues = res.data;
                         newState.isLatestRoutesDisabled = true;
@@ -463,6 +458,8 @@ class GoogleMap extends React.Component {
     }
 
     handleDestinationMarkerOnclick = (marker) => {
+        const busNoAndDirection = this.state.busToggleButton.split('(');
+        let routeDetailsObject = null;
         if (!this.state.isDestinationToggled) {
             if (destinationMarker != null && destinationMarker.get('stop_id') === marker.get('stop_id')) {
                 return;
@@ -512,7 +509,16 @@ class GoogleMap extends React.Component {
             this.setState({
                 routeDataArrayForStepper: newRouteTillDest
             })
-            this.createRoute(newRouteTillDest)
+            this.createRoute(newRouteTillDest);
+            routeDetailsObject = {
+                "route": busNoAndDirection[0].trim(),
+                "direction": parseInt(busNoAndDirection[1].replace(")", "").trim()),
+                "start_stop_id": sourceMarker.get('stop_id'),
+                "start_program_number": routeDataArray[0].program_number,
+                "dest_stop_id": destinationMarker.get('stop_id'),
+                "dest_program_number": destinationMarker.get('program_number'),
+                "user_id": this.props.user.user_id
+            }
         } else {
             if (sourceMarker != null && sourceMarker.get('stop_id') === marker.get('stop_id')) {
                 return;
@@ -562,7 +568,19 @@ class GoogleMap extends React.Component {
             this.setState({
                 routeDataArrayForStepper: newRouteTillDest.slice().reverse()
             })
-            this.createRoute(newRouteTillDest)
+            this.createRoute(newRouteTillDest);
+            routeDetailsObject = {
+                "route": busNoAndDirection[0].trim(),
+                "direction": parseInt(busNoAndDirection[1].replace(")", "").trim()),
+                "start_stop_id": sourceMarker.get('stop_id'),
+                "start_program_number": sourceMarker.get('program_number'),
+                "dest_stop_id": destinationMarker.get('stop_id'),
+                "dest_program_number": routeDataArray[0].program_number,
+                "user_id": this.props.user.user_id
+            }
+        }
+        if (this.props.isAuthenticated) {
+            this.saveLatestRoute(routeDetailsObject);
         }
     }
 
@@ -869,6 +887,13 @@ class GoogleMap extends React.Component {
         }
     }
 
+    saveLatestRoute = (routeDetailsObject) => {
+        axios.post(API_URL + "api/routes/save", routeDetailsObject).then(
+            res => this.getLatestRoutes(),
+            err => console.log("error in saveLatestRoute", err)
+        )
+    }
+
     render() {
         return (
             <div style={{ flexGrow: 1 }}>
@@ -885,9 +910,9 @@ class GoogleMap extends React.Component {
                     justify="space-between"
                     alignItems="flex-start"
                 >
-                    <Grid item xs={12} sm={12} lg={3} md={3}>
+                    <Grid item xs={12} sm={12} lg={3} md={3} xl={3}>
                         <CssBaseline />
-                        <Paper elevation={2} style={{ padding: "10px", height: "inherit", backgroundColor: ("rgb(250,251,252)"), maxHeight: "750px" }}>
+                        <Paper elevation={2} style={{ padding: "10px", height: "inherit", backgroundColor: "rgb(250,251,252)", maxHeight: "750px" }}>
                             <Typography>
                                 <b style={{ fontSize: "29px" }}>Welcome to Dublin Bus</b>
                             </Typography>
@@ -1039,7 +1064,7 @@ class GoogleMap extends React.Component {
                             </Snackbar>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={12} lg={9} md={9}>
+                    <Grid item xs={12} sm={12} lg={9} md={9} xl={9}>
                         <CssBaseline />
                         <Paper elevation={2} style={{ padding: "3px", height: "inherit" }}>
                             <div id="map" ref={this.map} style={{ width: 'inherit', height: '700px' }}></div>
