@@ -112,10 +112,10 @@ export class signup extends React.Component{
           body: data,
         }).then((response)=> {
           if(response.status == 200){
-
+            this.setState({firstName : '',lastName : '',email : '',password : '', success:'true'});
+            setTimeout(() => {this.setState({"success":''})}, 3000);
           }
-          this.setState({firstName : '',lastName : '',email : '',password : '', success:'true'});
-          setTimeout(() => {this.setState({"success":''})}, 3000);
+         
 
       });
     }
