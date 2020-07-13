@@ -25,6 +25,10 @@ import Snackbar from '@material-ui/core/Snackbar';
 import Alert from '@material-ui/lab/Alert';
 import Tooltip from '@material-ui/core/Tooltip';
 import Divider from '@material-ui/core/Divider';
+import RouteSuggestion from './RouteSuggestion';
+import { connect } from 'react-redux';
+import { withRouter } from 'react-router-dom';
+import DirectionsBusIcon from '@material-ui/icons/DirectionsBus';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -121,10 +125,18 @@ class GoogleMap extends React.Component {
             isBusNoVisible: false,
             isDestinationToggled: true,
             searchValue: 'Search destination stop',
-            isAlertOpen: false
+            isAlertOpen: false,
+            latestRoutesForUser: [],
+            activeIdForUsers: 0,
+            isLatestRoutesDisabled: false
         }
         // this.mapObject = null;
         this.map = React.createRef();
+        sourceMarker = null;
+        destinationMarker = null;
+        directionRendererArray = [];
+        routeDataArray = [];
+        allBusStopsArray = [];
     }
 
     initMap = () => {
@@ -137,8 +149,18 @@ class GoogleMap extends React.Component {
         });
     }
 
+    getLatestRoutes = () => {
+        axios.get(API_URL + "api/routes/getall/latest/" + this.props.user.user_id).then(
+            res => this.setState({ latestRoutesForUser: res.data }),
+            err => { console.log("error in getLatestRoutes", err) }
+        )
+    }
+
     componentDidMount() {
         this.initMap();
+        if (this.props.isAuthenticated) {
+            this.getLatestRoutes();
+        }
     }
 
     getGoogleMapsAutocomplete = (query) => {
@@ -210,6 +232,8 @@ class GoogleMap extends React.Component {
             newState.busToggleButton = '';
             newState.routeDataArrayForStepper = [];
             newState.isBusNoVisible = false;
+            newState.isLatestRoutesDisabled = false;
+            newState.activeIdForUsers = 0;
             this.setState(newState);
             sourceMarker = null;
             destinationMarker = null;
@@ -218,28 +242,49 @@ class GoogleMap extends React.Component {
             routeDataArray = [];
             allBusStopsArray = [];
         } else {
-            this.getGoogleMapsAutocomplete(value).then(
-                res => {
-                    let newState = { ...this.state };
-                    if (destinationMarker != null) {
-                        let filteredResult = [];
-                        for (var i = 0; i < res.data.length; i++) {
-                            if (res.data[i].fromDB) {
-                                if (res.data[i].id !== destinationMarker.get('stop_id')) {
-                                    filteredResult.push(res.data[i]);
-                                }
-                            } else {
-                                filteredResult.push(res.data[i]);
-                            }
-                        }
-                        newState.startBusStopSearchedValues = filteredResult;
-                    } else {
+            if (value.length > 3) {
+                this.getGoogleMapsAutocomplete(value).then(
+                    res => {
+                        let newState = { ...this.state };
                         newState.startBusStopSearchedValues = res.data;
-                    }
-                    this.setState(newState);
-                }, err => {
-                    console.log('error in startBusStopOnInputChange', err)
-                })
+                        newState.isLatestRoutesDisabled = true;
+                        if (this.state.activeIdForUsers !== 0) {
+                            newState.startBusStopSearchedValues = [];
+                            newState.startBusStopValue = null;
+                            newState.busArrivingAtMarkers = [];
+                            newState.busToggleButton = '';
+                            newState.routeDataArrayForStepper = [];
+                            newState.isBusNoVisible = false;
+                            newState.activeIdForUsers = 0;
+                            sourceMarker = null;
+                            destinationMarker = null;
+                            clearAllMarkersForStart();
+                            this.removeRoute();
+                            routeDataArray = [];
+                            allBusStopsArray = [];
+                        }
+                        this.setState(newState);
+                    }, err => {
+                        console.log('error in startBusStopOnInputChange', err)
+                    })
+            } else {
+                let newState = { ...this.state };
+                newState.startBusStopSearchedValues = [];
+                newState.startBusStopValue = null;
+                newState.busArrivingAtMarkers = [];
+                newState.busToggleButton = '';
+                newState.routeDataArrayForStepper = [];
+                newState.isBusNoVisible = false;
+                newState.isLatestRoutesDisabled = false;
+                newState.activeIdForUsers = 0;
+                this.setState(newState);
+                sourceMarker = null;
+                destinationMarker = null;
+                clearAllMarkersForStart();
+                this.removeRoute();
+                routeDataArray = [];
+                allBusStopsArray = [];
+            }
         }
     }
 
@@ -413,6 +458,8 @@ class GoogleMap extends React.Component {
     }
 
     handleDestinationMarkerOnclick = (marker) => {
+        const busNoAndDirection = this.state.busToggleButton.split('(');
+        let routeDetailsObject = null;
         if (!this.state.isDestinationToggled) {
             if (destinationMarker != null && destinationMarker.get('stop_id') === marker.get('stop_id')) {
                 return;
@@ -462,7 +509,16 @@ class GoogleMap extends React.Component {
             this.setState({
                 routeDataArrayForStepper: newRouteTillDest
             })
-            this.createRoute(newRouteTillDest)
+            this.createRoute(newRouteTillDest);
+            routeDetailsObject = {
+                "route": busNoAndDirection[0].trim(),
+                "direction": parseInt(busNoAndDirection[1].replace(")", "").trim()),
+                "start_stop_id": sourceMarker.get('stop_id'),
+                "start_program_number": routeDataArray[0].program_number,
+                "dest_stop_id": destinationMarker.get('stop_id'),
+                "dest_program_number": destinationMarker.get('program_number'),
+                "user_id": this.props.user.user_id
+            }
         } else {
             if (sourceMarker != null && sourceMarker.get('stop_id') === marker.get('stop_id')) {
                 return;
@@ -512,7 +568,19 @@ class GoogleMap extends React.Component {
             this.setState({
                 routeDataArrayForStepper: newRouteTillDest.slice().reverse()
             })
-            this.createRoute(newRouteTillDest)
+            this.createRoute(newRouteTillDest);
+            routeDetailsObject = {
+                "route": busNoAndDirection[0].trim(),
+                "direction": parseInt(busNoAndDirection[1].replace(")", "").trim()),
+                "start_stop_id": sourceMarker.get('stop_id'),
+                "start_program_number": sourceMarker.get('program_number'),
+                "dest_stop_id": destinationMarker.get('stop_id'),
+                "dest_program_number": routeDataArray[0].program_number,
+                "user_id": this.props.user.user_id
+            }
+        }
+        if (this.props.isAuthenticated) {
+            this.saveLatestRoute(routeDetailsObject);
         }
     }
 
@@ -641,7 +709,10 @@ class GoogleMap extends React.Component {
                 }
             }
         }
+        this.createRouteUsingMultipleWaypoints(res);
+    }
 
+    createRouteUsingMultipleWaypoints = (res) => {
         // Ref for below code: https://stackoverflow.com/questions/8779886/exceed-23-waypoint-per-request-limit-on-google-directions-api-business-work-lev
         var directionsService = new google.maps.DirectionsService();
 
@@ -702,6 +773,7 @@ class GoogleMap extends React.Component {
         newState.busArrivingAtMarkers = [];
         newState.busToggleButton = '';
         newState.routeDataArrayForStepper = [];
+        newState.activeIdForUsers = 0;
         newState.isBusNoVisible = false;
         newState.isDestinationToggled = !this.state.isDestinationToggled
         if (newState.isDestinationToggled) {
@@ -711,6 +783,7 @@ class GoogleMap extends React.Component {
         }
         newState.startBusStopValue = { title: '' };
         newState.isAlertOpen = true;
+        newState.isLatestRoutesDisabled = false;
         this.setState(newState);
         sourceMarker = null;
         destinationMarker = null;
@@ -727,17 +800,119 @@ class GoogleMap extends React.Component {
         this.setState({ isAlertOpen: false })
     }
 
+    handleOnclickForLatestRoutes = (id, bus_number, direction) => {
+        if (this.state.activeIdForUsers !== id) {
+            axios.get(API_URL + "api/routes/getall/waypoints/" + id).then(
+                resp => {
+                    const res = resp.data;
+
+                    // Reset everything
+                    let newState = { ...this.state };
+                    newState.startBusStopSearchedValues = [];
+                    newState.busArrivingAtMarkers = [];
+                    newState.busToggleButton = '';
+                    newState.routeDataArrayForStepper = [];
+                    // newState.startBusStopValue = { title: '' };
+                    newState.isBusNoVisible = false;
+                    this.setState(newState);
+                    sourceMarker = null;
+                    destinationMarker = null;
+                    clearAllMarkersForStart();
+                    this.removeRoute();
+                    routeDataArray = [];
+                    allBusStopsArray = [];
+                    this.markersOnMap = [];
+
+                    // create markers
+                    for (let d = 0; d < res.length; d++) {
+                        let marker = null;
+                        if (d === 0) {
+                            marker = new google.maps.Marker({
+                                position: { lat: parseFloat(res[d].stop_lat), lng: parseFloat(res[d].stop_lng) },
+                                map: mapObj,
+                                icon: require('../images/marker_black.png'),
+                                animation: google.maps.Animation.DROP,
+                                stop_id: res[d].stop_id,
+                                stop_name: res[d].stop_name,
+                                program_number: res[d].program_number
+                            });
+                            sourceMarker = marker;
+                        } else if (d === res.length - 1) {
+                            marker = new google.maps.Marker({
+                                position: { lat: parseFloat(res[d].stop_lat), lng: parseFloat(res[d].stop_lng) },
+                                map: mapObj,
+                                icon: require('../images/marker_green.png'),
+                                animation: google.maps.Animation.DROP,
+                                stop_id: res[d].stop_id,
+                                stop_name: res[d].stop_name,
+                                program_number: res[d].program_number
+                            });
+                            destinationMarker = marker;
+                        } else {
+                            marker = new google.maps.Marker({
+                                position: { lat: parseFloat(res[d].stop_lat), lng: parseFloat(res[d].stop_lng) },
+                                map: mapObj,
+                                icon: require('../images/marker_red.png'),
+                                animation: google.maps.Animation.DROP,
+                                stop_id: res[d].stop_id,
+                                stop_name: res[d].stop_name,
+                                program_number: res[d].program_number
+                            });
+                        }
+                        marker.addListener('mouseover', function () {
+                            const infowindow = new google.maps.InfoWindow({
+                                content: "Stop Name: <b>" + marker.get('stop_name') + "</b><br>"
+                                    + "Stop No: <b>" + marker.get('stop_id') + "</b>"
+                            });
+                            markersInfoWindow.push(infowindow);
+                            infowindow.open(marker.get('map'), marker);
+                        });
+
+                        marker.addListener('mouseout', function () {
+                            closeAllOtherInfo()
+                        })
+                        markersOnMap.push(marker);
+                    }
+                    this.setState({
+                        busToggleButton: bus_number + "(" + direction + ")",
+                        routeDataArrayForStepper: res,
+                        activeIdForUsers: id
+                    })
+
+                    // create route
+                    this.createRouteUsingMultipleWaypoints(res);
+                },
+                err => { console.log("error in handleOnclickForLatestRoutes", err) }
+            )
+        }
+    }
+
+    saveLatestRoute = (routeDetailsObject) => {
+        axios.post(API_URL + "api/routes/save", routeDetailsObject).then(
+            res => this.getLatestRoutes(),
+            err => console.log("error in saveLatestRoute", err)
+        )
+    }
+
     render() {
         return (
             <div style={{ flexGrow: 1 }}>
+                {this.props.isAuthenticated && (
+                    <RouteSuggestion
+                        user={this.props.user}
+                        latestRoutesForUser={this.state.latestRoutesForUser}
+                        handleOnclickForLatestRoutes={this.handleOnclickForLatestRoutes}
+                        isLatestRoutesDisabled={this.state.isLatestRoutesDisabled}
+                    />
+                )}
                 <Grid container spacing={2}
                     direction="row"
                     justify="space-between"
                     alignItems="flex-start"
                 >
-                    <Grid item xs={12} sm={12} lg={3} md={3}>
+                    <Grid item xs={12} sm={12} lg={3} md={3} xl={3}>
                         <CssBaseline />
-                        <Paper elevation={2} style={{ padding: "10px", height: "inherit", backgroundColor: ("rgb(250,251,252)"), maxHeight: "750px" }}>
+                        <Paper elevation={2} style={{ padding: "10px", height: "inherit", backgroundColor: "rgb(250,251,252)", maxHeight: "750px" }}>
                             <Typography>
                                 <b style={{ fontSize: "29px" }}>Welcome to Dublin Bus</b>
                             </Typography>
@@ -798,7 +973,7 @@ class GoogleMap extends React.Component {
                                                 value={bus.bus_number + "(" + bus.direction + ")"}
                                                 style={{ color: 'black' }} key={index}
                                             >
-                                                {bus.bus_number + "(" + bus.direction + ")"}
+                                                <DirectionsBusIcon fontSize="small" /> {bus.bus_number + "(" + bus.direction + ")"}
                                             </ToggleButton>
                                         )}
                                     </ToggleButtonGroup>
@@ -816,7 +991,7 @@ class GoogleMap extends React.Component {
                                             value={this.state.busToggleButton}
                                             style={{ color: 'black' }}
                                         >
-                                            {this.state.busToggleButton}
+                                            <DirectionsBusIcon fontSize="small" /> {this.state.busToggleButton}
                                         </ToggleButton>
                                     </ToggleButtonGroup>
                                 </div>
@@ -889,7 +1064,7 @@ class GoogleMap extends React.Component {
                             </Snackbar>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={12} lg={9} md={9}>
+                    <Grid item xs={12} sm={12} lg={9} md={9} xl={9}>
                         <CssBaseline />
                         <Paper elevation={2} style={{ padding: "3px", height: "inherit" }}>
                             <div id="map" ref={this.map} style={{ width: 'inherit', height: '700px' }}></div>
@@ -901,4 +1076,11 @@ class GoogleMap extends React.Component {
     }
 }
 
-export default GoogleMap;
+const mapStateToProps = (state) => {
+    return {
+        isAuthenticated: state.isAuthenticated,
+        user: state.user
+    }
+}
+
+export default withRouter(connect(mapStateToProps)(GoogleMap));

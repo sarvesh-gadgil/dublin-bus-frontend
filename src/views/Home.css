@@ -1,0 +1,13 @@
+.homeBanner {
+    width: 100%;
+    height: 100vh;
+    padding: 8px;
+    background-image: url("../images/home_banner.jpg");
+    background-size: cover;
+}
+
+@media only screen and (max-width: 1450px) {
+    .homeBanner {
+        height: auto;
+    }
+}
