@@ -1,7 +1,7 @@
 import React from 'react';
 import { login } from '../actions/action';
 import { connect } from 'react-redux';
-import { withRouter } from 'react-router-dom';
+import { Link, withRouter } from 'react-router-dom';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
@@ -139,6 +139,13 @@ class Login extends React.Component {
                                     </Button>
                                     <br />
                                     <br />
+                                    
+                        
+                            <Link to="/signup" style={{ color: 'inherit', textDecoration: 'inherit' }}>
+                            
+                                    
+                        
+
                                     <Button
                                         type="button"
                                         fullWidth
@@ -148,6 +155,10 @@ class Login extends React.Component {
                                     >
                                         Register
                                     </Button>
+                                    </Link>
+                        
+                                    
+    
                                 </form>
                             </Paper>
                         </Grid>
