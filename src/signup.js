@@ -3,6 +3,7 @@ import Avatar from '@material-ui/core/Avatar';
 import Button from '@material-ui/core/Button';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import TextField from '@material-ui/core/TextField';
+import IconButton from '@material-ui/core/IconButton';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Checkbox from '@material-ui/core/Checkbox';
 import Link from '@material-ui/core/Link';
@@ -14,6 +15,13 @@ import Container from '@material-ui/core/Container';
 import ReactDOM from 'react-dom';
 import Snackbar from '@material-ui/core/Snackbar';
 import MuiAlert from '@material-ui/lab/Alert';
+import InputAdornment from '@material-ui/core/InputAdornment';
+import Visibility from '@material-ui/icons/Visibility';
+import VisibilityOff from '@material-ui/icons/VisibilityOff'; 
+import OutlinedInput from "@material-ui/core/OutlinedInput";
+import InputLabel from "@material-ui/core/InputLabel";
+// import { LOGIN_ACTION, LOGOUT_ACTION, API_URL } from '../constants';
+// import axios from 'axios';
  
 function Alert(props) {
   return <MuiAlert elevation={6} variant="filled" {...props} />;
@@ -67,20 +75,48 @@ export class signup extends React.Component{
       lastName : '',
       email : '',
       password : '',
+      showPassword : false,
+      showConfirmPassword: false,
       isFirstNameError : false,
       isLastNameError : false,
       isEmailError : false,
       isPasswordError : false,
+      isConfirmPasswordError: false,
       success : '',
+      failure : '',
     }
+
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleClose = this.handleClose.bind(this);
+    this.handleClickShowPassword = this.handleClickShowPassword.bind(this);
+    this.handleClickShowConfirmPassword = this.handleClickShowConfirmPassword.bind(this);
+    this.handleMouseDownPassword = this.handleMouseDownPassword.bind(this);
+  }
+
+  handleClickShowPassword(){
+    if(this.state.showPassword){
+      this.setState({"showPassword":false});
+    }else{
+      this.setState({"showPassword":true});
+    }
+  }
+    handleClickShowConfirmPassword(){
+      if(this.state.showConfirmPassword){
+        this.setState({"showConfirmPassword":false});
+      }else{
+        this.setState({"showConfirmPassword":true});
+      }
+    
+  }
+
+  handleMouseDownPassword(event){
+    event.preventDefault();
   }
 
    handleChange(event, key){
         this.setState({[key]:event.target.value});
-        this.setState({"isFirstNameError":false, "isLastNameError":false, "isEmailError":false, "isPasswordError":false});
+        this.setState({"isFirstNameError":false, "isLastNameError":false, "isEmailError":false, "isPasswordError":false,"isConfirmPasswordError":false});
     }
 
    handleSubmit(event) {
@@ -91,8 +127,6 @@ export class signup extends React.Component{
       data.last_name=this.state.lastName;
       data.username=this.state.email;
       data.password=this.state.password;
-      console.log(data);
-      console.log(this.state.isLastNameError);
      
       const form = new FormData(event.target);
       console.log(form);
@@ -105,16 +139,38 @@ export class signup extends React.Component{
           this.setState({"isEmailError" : true}); 
       }else if(data.password.length < 7){
            this.setState({"isPasswordError" : true});
+      }else if(data.password!=this.state.confirmpassword){
+          this.setState({"isConfirmPasswordError" : true});
       }else{
+        // export const login = (firstname,lastname,username, password) => {
+        //   return dispatch => {
+        //     return axios.post(API_URL + "api/user/create/",
+        //       username,
+        //       password
+        //     ).then(res => {
+        //       localStorage.setItem('authToken', res.data.token);
+        //       setAuthToken(res.data.token);
+        //       dispatch({ type: LOGIN_ACTION, user: { user_id: res.data.user_id, first_name: res.data.first_name } });
+        //     })
+        //   }
+        // };
+        
         console.log(data);
         fetch('/user/create', {
           method: 'POST',
           body: data,
+          
         }).then((response)=> {
           if(response.status == 200){
-            this.setState({firstName : '',lastName : '',email : '',password : '', success:'true'});
-            setTimeout(() => {this.setState({"success":''})}, 3000);
-          }
+            this.setState({first_name : '',last_name : '',username : '',password : '', success:'true'});
+             setTimeout(() => {this.setState({"success":''})}, 3000);
+
+         }else{
+          this.setState({first_name : '',last_name : '',username : '',password : '', failure:'true'});
+          setTimeout(() => {this.setState({"failure":''})}, 3000);
+         }
+       
+
          
 
       });
@@ -127,7 +183,7 @@ export class signup extends React.Component{
 
   render(){
     const { classes } = this.props;
-    const {isFirstNameError, isLastNameError, isEmailError, isPasswordError} = this.state;
+    const {isFirstNameError, isLastNameError, isEmailError, isPasswordError, isConfirmPasswordError} = this.state;
 
 
   return (
@@ -137,6 +193,11 @@ export class signup extends React.Component{
           Registered Successfully!!!
         </Alert>
       </Snackbar>
+      <Snackbar open= {this.state.failure} autoHideDuration={2000} onClose={this.handleClose}>
+       <Alert onClose={this.handleClose} severity="error">
+         Error in Registration!!!
+       </Alert>
+     </Snackbar>
       <CssBaseline />
       <div className={classes.paper}>
         <Avatar className={classes.avatar} />
@@ -154,6 +215,7 @@ export class signup extends React.Component{
                 required
                 fullWidth
                 id="firstName"
+                size="small"
                 label="First Name"
                 value= {this.state.firstName}
                 autoFocus
@@ -167,6 +229,7 @@ export class signup extends React.Component{
                 required
                 fullWidth
                 id="lastName"
+                size="small"
                 label="Last Name"
                 value= {this.state.lastName}
                 name="lastName"
@@ -181,6 +244,7 @@ export class signup extends React.Component{
                 required
                 fullWidth
                 id="email"
+                size="small"
                 label="Email Address"
                 value= {this.state.email}
                 name="email"
@@ -189,24 +253,74 @@ export class signup extends React.Component{
               />
             </Grid>
             <Grid item xs={12}>
+            {/* <InputLabel htmlFor="outlined-adornment-password">
+                    Password
+              </InputLabel> */}
+              
+              {/* <OutlinedInput */}
               <TextField
                 error = {isPasswordError}
-                variant="outlined"
-                required
-                fullWidth
-                name="password"
-                label="Password"
-                value= {this.state.password}
-                type="password"
-                id="password"
-                autoComplete="current-password"
-                 onChange = {(e)=>this.handleChange(e, 'password')}
-              />
+                  required
+                  fullWidth
+                  label="Password"
+                  id="password"
+                  size="small"
+                  variant="outlined"
+                  name="password"
+                    // id="outlined-adornment-password"
+                    type={this.state.showPassword ? "text" : "password"}
+                    value={this.state.password}
+                    onChange={(e)=>this.handleChange(e, 'password')}
+                    InputProps={{
+                      endAdornment : (
+                      <InputAdornment position="end">
+                        <IconButton
+                          aria-label="toggle password visibility"
+                          onClick={this.handleClickShowPassword}
+                          onMouseDown={this.handleMouseDownPassword}
+                          edge="end"
+                        >
+                          {this.state.showPassword ? <Visibility /> : <VisibilityOff />}
+                        </IconButton>
+                      </InputAdornment>
+                      )
+                    }}
+                 
+                   /> 
             </Grid>
-       
-          </Grid>
-          <Button
+            <Grid item xs={12}>
+            <TextField
+            error = {isConfirmPasswordError}
+              required
+              fullWidth
+              label="Confirm Password"
+              id="confirmPassword"
+              size="small"
+              variant="outlined"
+              name="confirmpassword"
+                // id="outlined-adornment-password"
+                type={this.state.showConfirmPassword ? "text" : "password"}
+                value={this.state.confirmpassword}
+                onChange={(e)=>this.handleChange(e, 'confirmpassword')}
+                InputProps={{
+                  endAdornment : (
+                  <InputAdornment position="end">
+                    <IconButton
+                      aria-label="toggle password visibility"
+                      onClick={this.handleClickShowConfirmPassword}
+                      onMouseDown={this.handleMouseDownPassword}
+                      edge="end"
+                    >
+                      {this.state.showConfirmPassword ? <Visibility /> : <VisibilityOff />}
+                    </IconButton>
+                  </InputAdornment>
+                  )
+                }}
+              /> 
+              </Grid>
+            <Button
             type="submit"
+            size="large"
             fullWidth
             variant="contained"
             color="primary"
@@ -220,6 +334,7 @@ export class signup extends React.Component{
                 Already have an account? Sign in
               </Link>
             </Grid>
+          </Grid>
           </Grid>
         </form>
       </div>
