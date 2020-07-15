@@ -23,7 +23,9 @@ import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import OutlinedInput from "@material-ui/core/OutlinedInput";
 import InputLabel from "@material-ui/core/InputLabel";
 import login_banner from '../images/login_banner.jpg';
- 
+import axios from 'axios';
+import { API_URL } from '../constants';
+
 function Alert(props) {
   return <MuiAlert elevation={6} variant="filled" {...props} />;
 }
@@ -157,27 +159,23 @@ export class signup extends React.Component{
         // };
         
         console.log(data);
-        fetch('/user/create', {
-          method: 'POST',
-          body: data,
-          
-        }).then((response)=> {
+        console.log(axios);
+        axios.post(API_URL+'api/user/create',data,null).then((response)=> {
+            console.log(response);
           if(response.status == 200){
-            this.setState({first_name : '',last_name : '',username : '',password : '', success:'true'});
+            this.setState({first_name : '',last_name : '',username : '',password : '', success: true});
              setTimeout(() => {this.setState({"success":''})}, 3000);
 
-         }else{
-          this.setState({first_name : '',last_name : '',username : '',password : '', failure:'true'});
+         }else
+          this.setState({first_name : '',last_name : '',username : '',password : '', failure: true});
           setTimeout(() => {this.setState({"failure":''})}, 3000);
          }
-       
+                
 
-         
-
-      });
+    );
     }
    }
-
+  
   handleClose(event, reason) {
     this.setState({"success":''});
   }
