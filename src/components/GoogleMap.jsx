@@ -973,7 +973,7 @@ class GoogleMap extends React.Component {
                                                 margin="normal"
                                                 variant="outlined"
                                                 fullWidth
-                                                autoFocus
+                                                // autoFocus
                                             />
                                         </Grid>
                                         <Grid item xs={2} sm={1} lg={3} md={3} style={{ width: 'inherit' }}>
@@ -1076,7 +1076,7 @@ class GoogleMap extends React.Component {
                                         ))}
                                     </Stepper>
                                     <Typography variant="button">
-                                        <span style={{ fontSize: "15px", fontWeight: "bolder" }}>Fare details:</span>
+                                        <span style={{ fontSize: "15px", fontWeight: "bolder" }}>Fare estimates:</span>
                                     </Typography>
                                     <TableContainer style={{ backgroundColor: "transparent" }}>
                                         <Table size="small">
