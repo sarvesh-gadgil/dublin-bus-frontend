@@ -29,6 +29,12 @@ import RouteSuggestion from './RouteSuggestion';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
 import DirectionsBusIcon from '@material-ui/icons/DirectionsBus';
+import Table from '@material-ui/core/Table';
+import TableBody from '@material-ui/core/TableBody';
+import TableCell from '@material-ui/core/TableCell';
+import TableContainer from '@material-ui/core/TableContainer';
+import TableHead from '@material-ui/core/TableHead';
+import TableRow from '@material-ui/core/TableRow';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -156,6 +162,14 @@ class GoogleMap extends React.Component {
         )
     }
 
+    componentWillUnmount() {
+        sourceMarker = null;
+        destinationMarker = null;
+        directionRendererArray = [];
+        routeDataArray = [];
+        allBusStopsArray = [];
+    }
+
     componentDidMount() {
         this.initMap();
         if (this.props.isAuthenticated) {
@@ -242,7 +256,7 @@ class GoogleMap extends React.Component {
             routeDataArray = [];
             allBusStopsArray = [];
         } else {
-            if (value.length > 3) {
+            if (value.length > 2) {
                 this.getGoogleMapsAutocomplete(value).then(
                     res => {
                         let newState = { ...this.state };
@@ -895,6 +909,28 @@ class GoogleMap extends React.Component {
     }
 
     render() {
+        let isExpressBus = false, adultCash, adultLeap, childCash = "€1.30", childLeap = "€1.00", schoolHrsCash = "€1.00", schoolHrsLeap = "€0.80";
+        if (sourceMarker !== null && destinationMarker !== null) {
+            isExpressBus = this.state.busToggleButton.indexOf("X") !== -1;
+            if (!isExpressBus) {
+                const totalStops = this.state.routeDataArrayForStepper.length - 1;
+                if (totalStops >= 1 && totalStops <= 3) {
+                    adultCash = "€2.15";
+                    adultLeap = "€1.55";
+                } else if (totalStops >= 4 && totalStops <= 13) {
+                    adultCash = "€3.00";
+                    adultLeap = "€2.25";
+                } else {
+                    adultCash = "€3.30";
+                    adultLeap = "€2.50";
+                }
+            } else {
+                adultCash = "€3.80";
+                adultLeap = "€3.00";
+                childCash = "€1.60";
+                childLeap = "€1.26";
+            }
+        }
         return (
             <div style={{ flexGrow: 1 }}>
                 {this.props.isAuthenticated && (
@@ -910,7 +946,7 @@ class GoogleMap extends React.Component {
                     justify="space-between"
                     alignItems="flex-start"
                 >
-                    <Grid item xs={12} sm={12} lg={3} md={3} xl={3}>
+                    <Grid item xs={12} sm={12} lg={3} md={12} xl={3}>
                         <CssBaseline />
                         <Paper elevation={2} style={{ padding: "10px", height: "inherit", backgroundColor: "rgb(250,251,252)", maxHeight: "750px" }}>
                             <Typography>
@@ -945,7 +981,7 @@ class GoogleMap extends React.Component {
                                                 margin="normal"
                                                 variant="outlined"
                                                 fullWidth
-                                                autoFocus
+                                            // autoFocus
                                             />
                                         </Grid>
                                         <Grid item xs={2} sm={1} lg={3} md={3} style={{ width: 'inherit' }}>
@@ -1032,24 +1068,81 @@ class GoogleMap extends React.Component {
                             </MuiPickersUtilsProvider>
 
                             {sourceMarker && destinationMarker && (
-                                <div style={{ height: '325px', overflow: 'auto' }}>
-                                    <Divider variant="middle" />
-                                    <br />
+                                <div style={{ height: '305px', overflow: 'auto' }}>
                                     <Typography variant="button">
-                                        Total travel time:
+                                        <span style={{ fontSize: "15px", fontWeight: "bolder" }}>Total travel time:</span>
                                     </Typography>
-                                    <br />
                                     <Divider variant="middle" />
                                     <Stepper orientation="vertical" style={{ backgroundColor: "transparent" }}>
                                         {this.state.routeDataArrayForStepper.map((busData, index) => (
                                             <Step key={index} active>
-                                                <StepLabel>{busData.stop_name + "(" + busData.stop_id + ")"}</StepLabel>
+                                                <StepLabel>{busData.stop_name + " (" + busData.stop_id + ")"}</StepLabel>
                                                 <StepContent>
                                                     <Typography variant="caption">Estimated travel time:</Typography>
                                                 </StepContent>
                                             </Step>
                                         ))}
                                     </Stepper>
+                                    <Typography variant="button">
+                                        <span style={{ fontSize: "15px", fontWeight: "bolder" }}>Fare estimates:</span>
+                                    </Typography>
+                                    <TableContainer style={{ backgroundColor: "transparent" }}>
+                                        <Table size="small">
+                                            <TableHead>
+                                                <TableRow>
+                                                    <TableCell>All Fares</TableCell>
+                                                    <TableCell align="right">Price</TableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            {!isExpressBus ? (
+                                                <TableBody>
+                                                    <TableRow hover>
+                                                        <TableCell component="th" scope="row">Adult Cash</TableCell>
+                                                        <TableCell align="right">{adultCash}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow hover>
+                                                        <TableCell component="th" scope="row">Adult Leap</TableCell>
+                                                        <TableCell align="right">{adultLeap}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow hover>
+                                                        <TableCell component="th" scope="row">Child Cash (Under 16)</TableCell>
+                                                        <TableCell align="right">{childCash}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow hover>
+                                                        <TableCell component="th" scope="row">Child Leap (Under 19)</TableCell>
+                                                        <TableCell align="right">{childLeap}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow hover>
+                                                        <TableCell component="th" scope="row">School Hours Cash</TableCell>
+                                                        <TableCell align="right">{schoolHrsCash}</TableCell>
+                                                    </TableRow>
+                                                    <TableRow hover>
+                                                        <TableCell component="th" scope="row">School Hours Leap</TableCell>
+                                                        <TableCell align="right">{schoolHrsLeap}</TableCell>
+                                                    </TableRow>
+                                                </TableBody>
+                                            ) : (
+                                                    <TableBody>
+                                                        <TableRow hover>
+                                                            <TableCell component="th" scope="row">Adult Cash</TableCell>
+                                                            <TableCell align="right">{adultCash}</TableCell>
+                                                        </TableRow>
+                                                        <TableRow hover>
+                                                            <TableCell component="th" scope="row">Adult Leap</TableCell>
+                                                            <TableCell align="right">{adultLeap}</TableCell>
+                                                        </TableRow>
+                                                        <TableRow hover>
+                                                            <TableCell component="th" scope="row">Child Cash (Under 16)</TableCell>
+                                                            <TableCell align="right">{childCash}</TableCell>
+                                                        </TableRow>
+                                                        <TableRow hover>
+                                                            <TableCell component="th" scope="row">Child Leap (Under 19)</TableCell>
+                                                            <TableCell align="right">{childLeap}</TableCell>
+                                                        </TableRow>
+                                                    </TableBody>
+                                                )}
+                                        </Table>
+                                    </TableContainer>
                                 </div>
                             )}
                             <Snackbar
@@ -1064,7 +1157,7 @@ class GoogleMap extends React.Component {
                             </Snackbar>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={12} lg={9} md={9} xl={9}>
+                    <Grid item xs={12} sm={12} lg={9} md={12} xl={9}>
                         <CssBaseline />
                         <Paper elevation={2} style={{ padding: "3px", height: "inherit" }}>
                             <div id="map" ref={this.map} style={{ width: 'inherit', height: '700px' }}></div>
