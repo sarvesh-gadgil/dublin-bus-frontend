@@ -1068,7 +1068,7 @@ class GoogleMap extends React.Component {
                             </MuiPickersUtilsProvider>
 
                             {sourceMarker && destinationMarker && (
-                                <div style={{ height: '325px', overflow: 'auto' }}>
+                                <div style={{ height: '305px', overflow: 'auto' }}>
                                     <Typography variant="button">
                                         <span style={{ fontSize: "15px", fontWeight: "bolder" }}>Total travel time:</span>
                                     </Typography>
