@@ -162,6 +162,14 @@ class GoogleMap extends React.Component {
         )
     }
 
+    componentWillUnmount() {
+        sourceMarker = null;
+        destinationMarker = null;
+        directionRendererArray = [];
+        routeDataArray = [];
+        allBusStopsArray = [];
+    }
+
     componentDidMount() {
         this.initMap();
         if (this.props.isAuthenticated) {
@@ -248,7 +256,7 @@ class GoogleMap extends React.Component {
             routeDataArray = [];
             allBusStopsArray = [];
         } else {
-            if (value.length > 3) {
+            if (value.length > 2) {
                 this.getGoogleMapsAutocomplete(value).then(
                     res => {
                         let newState = { ...this.state };
@@ -938,7 +946,7 @@ class GoogleMap extends React.Component {
                     justify="space-between"
                     alignItems="flex-start"
                 >
-                    <Grid item xs={12} sm={12} lg={3} md={3} xl={3}>
+                    <Grid item xs={12} sm={12} lg={3} md={12} xl={3}>
                         <CssBaseline />
                         <Paper elevation={2} style={{ padding: "10px", height: "inherit", backgroundColor: "rgb(250,251,252)", maxHeight: "750px" }}>
                             <Typography>
@@ -973,7 +981,7 @@ class GoogleMap extends React.Component {
                                                 margin="normal"
                                                 variant="outlined"
                                                 fullWidth
-                                                // autoFocus
+                                            // autoFocus
                                             />
                                         </Grid>
                                         <Grid item xs={2} sm={1} lg={3} md={3} style={{ width: 'inherit' }}>
@@ -1149,7 +1157,7 @@ class GoogleMap extends React.Component {
                             </Snackbar>
                         </Paper>
                     </Grid>
-                    <Grid item xs={12} sm={12} lg={9} md={9} xl={9}>
+                    <Grid item xs={12} sm={12} lg={9} md={12} xl={9}>
                         <CssBaseline />
                         <Paper elevation={2} style={{ padding: "3px", height: "inherit" }}>
                             <div id="map" ref={this.map} style={{ width: 'inherit', height: '700px' }}></div>

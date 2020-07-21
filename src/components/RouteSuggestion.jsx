@@ -27,7 +27,7 @@ const welcomeMessageAndSuggestion = (props) => {
                 justify="space-between"
                 alignItems="flex-start"
             >
-                <Grid item xs={12} sm={12} lg={8} md={8} xl={8}>
+                <Grid item xs={12} sm={12} lg={8} md={12} xl={8}>
                     <Typography style={{ color: "black", fontFamily: "Tahoma", fontSize: "40px" }}>
                         {welcomeMsg}{props.user.first_name}
                     </Typography>
@@ -61,7 +61,7 @@ const welcomeMessageAndSuggestion = (props) => {
                             </>
                         )}
                 </Grid>
-                <Grid item xs={12} sm={12} lg={4} md={4} xl={4}>
+                <Grid item xs={12} sm={12} lg={4} md={12} xl={4}>
                     <Typography variant="subtitle1" style={{ color: "black", fontFamily: "Tahoma" }}>
                         Latest Tweets
                     </Typography>
