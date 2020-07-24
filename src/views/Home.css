@@ -1,6 +1,6 @@
 .homeBanner {
     width: 100%;
-    height: 100vh;
+    height: 125vh;
     padding: 8px;
     background-image: url("../images/home_banner.jpg");
     background-size: cover;

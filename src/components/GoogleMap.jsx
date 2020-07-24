@@ -24,7 +24,7 @@ import Switch from '@material-ui/core/Switch';
 import Snackbar from '@material-ui/core/Snackbar';
 import Alert from '@material-ui/lab/Alert';
 import Tooltip from '@material-ui/core/Tooltip';
-import Divider from '@material-ui/core/Divider';
+// import Divider from '@material-ui/core/Divider';
 import RouteSuggestion from './RouteSuggestion';
 import { connect } from 'react-redux';
 import { withRouter } from 'react-router-dom';
@@ -35,6 +35,10 @@ import TableCell from '@material-ui/core/TableCell';
 import TableContainer from '@material-ui/core/TableContainer';
 import TableHead from '@material-ui/core/TableHead';
 import TableRow from '@material-ui/core/TableRow';
+import Accordion from '@material-ui/core/Accordion';
+import AccordionSummary from '@material-ui/core/AccordionSummary';
+import AccordionDetails from '@material-ui/core/AccordionDetails';
+import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -304,6 +308,22 @@ class GoogleMap extends React.Component {
 
     startBusStopOnSelect = (event, value, reason) => {
         if (!!value) {
+            let newState = { ...this.state };
+            newState.startBusStopSearchedValues = [];
+            newState.startBusStopValue = null;
+            newState.busArrivingAtMarkers = [];
+            newState.busToggleButton = '';
+            newState.routeDataArrayForStepper = [];
+            newState.isBusNoVisible = false;
+            newState.isLatestRoutesDisabled = false;
+            newState.activeIdForUsers = 0;
+            this.setState(newState);
+            sourceMarker = null;
+            destinationMarker = null;
+            clearAllMarkersForStart();
+            this.removeRoute();
+            routeDataArray = [];
+            allBusStopsArray = [];
             if (!value.fromDB) {
                 this.getGoogleMapsNearestStops(value.id).then(
                     res => {
@@ -948,7 +968,7 @@ class GoogleMap extends React.Component {
                 >
                     <Grid item xs={12} sm={12} lg={3} md={12} xl={3}>
                         <CssBaseline />
-                        <Paper elevation={2} style={{ padding: "10px", height: "inherit", backgroundColor: "rgb(250,251,252)", maxHeight: "750px" }}>
+                        <Paper elevation={2} style={{ padding: "10px", backgroundColor: "rgb(250,251,252)" }}>
                             <Typography>
                                 <b style={{ fontSize: "29px" }}>Welcome to Dublin Bus</b>
                             </Typography>
@@ -1068,81 +1088,96 @@ class GoogleMap extends React.Component {
                             </MuiPickersUtilsProvider>
 
                             {sourceMarker && destinationMarker && (
-                                <div style={{ height: '305px', overflow: 'auto' }}>
-                                    <Typography variant="button">
-                                        <span style={{ fontSize: "15px", fontWeight: "bolder" }}>Total travel time:</span>
-                                    </Typography>
-                                    <Divider variant="middle" />
-                                    <Stepper orientation="vertical" style={{ backgroundColor: "transparent" }}>
-                                        {this.state.routeDataArrayForStepper.map((busData, index) => (
-                                            <Step key={index} active>
-                                                <StepLabel>{busData.stop_name + " (" + busData.stop_id + ")"}</StepLabel>
-                                                <StepContent>
-                                                    <Typography variant="caption">Estimated travel time:</Typography>
-                                                </StepContent>
-                                            </Step>
-                                        ))}
-                                    </Stepper>
-                                    <Typography variant="button">
-                                        <span style={{ fontSize: "15px", fontWeight: "bolder" }}>Fare estimates:</span>
-                                    </Typography>
-                                    <TableContainer style={{ backgroundColor: "transparent" }}>
-                                        <Table size="small">
-                                            <TableHead>
-                                                <TableRow>
-                                                    <TableCell>All Fares</TableCell>
-                                                    <TableCell align="right">Price</TableCell>
-                                                </TableRow>
-                                            </TableHead>
-                                            {!isExpressBus ? (
-                                                <TableBody>
-                                                    <TableRow hover>
-                                                        <TableCell component="th" scope="row">Adult Cash</TableCell>
-                                                        <TableCell align="right">{adultCash}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow hover>
-                                                        <TableCell component="th" scope="row">Adult Leap</TableCell>
-                                                        <TableCell align="right">{adultLeap}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow hover>
-                                                        <TableCell component="th" scope="row">Child Cash (Under 16)</TableCell>
-                                                        <TableCell align="right">{childCash}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow hover>
-                                                        <TableCell component="th" scope="row">Child Leap (Under 19)</TableCell>
-                                                        <TableCell align="right">{childLeap}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow hover>
-                                                        <TableCell component="th" scope="row">School Hours Cash</TableCell>
-                                                        <TableCell align="right">{schoolHrsCash}</TableCell>
-                                                    </TableRow>
-                                                    <TableRow hover>
-                                                        <TableCell component="th" scope="row">School Hours Leap</TableCell>
-                                                        <TableCell align="right">{schoolHrsLeap}</TableCell>
-                                                    </TableRow>
-                                                </TableBody>
-                                            ) : (
-                                                    <TableBody>
-                                                        <TableRow hover>
-                                                            <TableCell component="th" scope="row">Adult Cash</TableCell>
-                                                            <TableCell align="right">{adultCash}</TableCell>
-                                                        </TableRow>
-                                                        <TableRow hover>
-                                                            <TableCell component="th" scope="row">Adult Leap</TableCell>
-                                                            <TableCell align="right">{adultLeap}</TableCell>
-                                                        </TableRow>
-                                                        <TableRow hover>
-                                                            <TableCell component="th" scope="row">Child Cash (Under 16)</TableCell>
-                                                            <TableCell align="right">{childCash}</TableCell>
-                                                        </TableRow>
-                                                        <TableRow hover>
-                                                            <TableCell component="th" scope="row">Child Leap (Under 19)</TableCell>
-                                                            <TableCell align="right">{childLeap}</TableCell>
-                                                        </TableRow>
-                                                    </TableBody>
-                                                )}
-                                        </Table>
-                                    </TableContainer>
+                                <div style={{ maxHeight: '315px', overflow: 'auto' }}>
+                                    <Accordion>
+                                        <AccordionSummary
+                                            expandIcon={<ExpandMoreIcon />}
+                                        >
+                                            <Typography>Total travel time</Typography>
+                                        </AccordionSummary>
+                                        <AccordionDetails>
+                                            <div style={{ height: '200px', overflow: 'auto', width: "100%" }}>
+                                                <Stepper orientation="vertical" style={{ backgroundColor: "transparent" }}>
+                                                    {this.state.routeDataArrayForStepper.map((busData, index) => (
+                                                        <Step key={index} active>
+                                                            <StepLabel>{busData.stop_name + " (" + busData.stop_id + ")"}</StepLabel>
+                                                            <StepContent>
+                                                                <Typography variant="caption">Estimated travel time:</Typography>
+                                                            </StepContent>
+                                                        </Step>
+                                                    ))}
+                                                </Stepper>
+                                            </div>
+                                        </AccordionDetails>
+                                    </Accordion>
+                                    <Accordion>
+                                        <AccordionSummary
+                                            expandIcon={<ExpandMoreIcon />}
+                                        >
+                                            <Typography >Fare estimates:</Typography>
+                                        </AccordionSummary>
+                                        <AccordionDetails>
+                                            <div style={{ height: 'auto', overflow: 'auto', width: "100%" }}>
+                                                <TableContainer style={{ backgroundColor: "transparent" }}>
+                                                    <Table size="small">
+                                                        <TableHead>
+                                                            <TableRow>
+                                                                <TableCell>All Fares</TableCell>
+                                                                <TableCell align="right">Price</TableCell>
+                                                            </TableRow>
+                                                        </TableHead>
+                                                        {!isExpressBus ? (
+                                                            <TableBody>
+                                                                <TableRow hover>
+                                                                    <TableCell component="th" scope="row">Adult Cash</TableCell>
+                                                                    <TableCell align="right">{adultCash}</TableCell>
+                                                                </TableRow>
+                                                                <TableRow hover>
+                                                                    <TableCell component="th" scope="row">Adult Leap</TableCell>
+                                                                    <TableCell align="right">{adultLeap}</TableCell>
+                                                                </TableRow>
+                                                                <TableRow hover>
+                                                                    <TableCell component="th" scope="row">Child Cash (Under 16)</TableCell>
+                                                                    <TableCell align="right">{childCash}</TableCell>
+                                                                </TableRow>
+                                                                <TableRow hover>
+                                                                    <TableCell component="th" scope="row">Child Leap (Under 19)</TableCell>
+                                                                    <TableCell align="right">{childLeap}</TableCell>
+                                                                </TableRow>
+                                                                <TableRow hover>
+                                                                    <TableCell component="th" scope="row">School Hours Cash</TableCell>
+                                                                    <TableCell align="right">{schoolHrsCash}</TableCell>
+                                                                </TableRow>
+                                                                <TableRow hover>
+                                                                    <TableCell component="th" scope="row">School Hours Leap</TableCell>
+                                                                    <TableCell align="right">{schoolHrsLeap}</TableCell>
+                                                                </TableRow>
+                                                            </TableBody>
+                                                        ) : (
+                                                                <TableBody>
+                                                                    <TableRow hover>
+                                                                        <TableCell component="th" scope="row">Adult Cash</TableCell>
+                                                                        <TableCell align="right">{adultCash}</TableCell>
+                                                                    </TableRow>
+                                                                    <TableRow hover>
+                                                                        <TableCell component="th" scope="row">Adult Leap</TableCell>
+                                                                        <TableCell align="right">{adultLeap}</TableCell>
+                                                                    </TableRow>
+                                                                    <TableRow hover>
+                                                                        <TableCell component="th" scope="row">Child Cash (Under 16)</TableCell>
+                                                                        <TableCell align="right">{childCash}</TableCell>
+                                                                    </TableRow>
+                                                                    <TableRow hover>
+                                                                        <TableCell component="th" scope="row">Child Leap (Under 19)</TableCell>
+                                                                        <TableCell align="right">{childLeap}</TableCell>
+                                                                    </TableRow>
+                                                                </TableBody>
+                                                            )}
+                                                    </Table>
+                                                </TableContainer>
+                                            </div>
+                                        </AccordionDetails>
+                                    </Accordion>
                                 </div>
                             )}
                             <Snackbar
