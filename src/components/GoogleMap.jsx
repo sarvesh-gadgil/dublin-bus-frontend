@@ -39,6 +39,7 @@ import Accordion from '@material-ui/core/Accordion';
 import AccordionSummary from '@material-ui/core/AccordionSummary';
 import AccordionDetails from '@material-ui/core/AccordionDetails';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
+import LinearProgress from '@material-ui/core/LinearProgress';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -138,7 +139,8 @@ class GoogleMap extends React.Component {
             isAlertOpen: false,
             latestRoutesForUser: [],
             activeIdForUsers: 0,
-            isLatestRoutesDisabled: false
+            isLatestRoutesDisabled: false,
+            isFetchingPrediction: false
         }
         // this.mapObject = null;
         this.map = React.createRef();
@@ -252,6 +254,7 @@ class GoogleMap extends React.Component {
             newState.isBusNoVisible = false;
             newState.isLatestRoutesDisabled = false;
             newState.activeIdForUsers = 0;
+            newState.isFetchingPrediction = false;
             this.setState(newState);
             sourceMarker = null;
             destinationMarker = null;
@@ -274,6 +277,7 @@ class GoogleMap extends React.Component {
                             newState.routeDataArrayForStepper = [];
                             newState.isBusNoVisible = false;
                             newState.activeIdForUsers = 0;
+                            newState.isFetchingPrediction = false;
                             sourceMarker = null;
                             destinationMarker = null;
                             clearAllMarkersForStart();
@@ -295,6 +299,7 @@ class GoogleMap extends React.Component {
                 newState.isBusNoVisible = false;
                 newState.isLatestRoutesDisabled = false;
                 newState.activeIdForUsers = 0;
+                newState.isFetchingPrediction = false;
                 this.setState(newState);
                 sourceMarker = null;
                 destinationMarker = null;
@@ -317,6 +322,7 @@ class GoogleMap extends React.Component {
             newState.isBusNoVisible = false;
             newState.isLatestRoutesDisabled = false;
             newState.activeIdForUsers = 0;
+            newState.isFetchingPrediction = false;
             this.setState(newState);
             sourceMarker = null;
             destinationMarker = null;
@@ -486,7 +492,8 @@ class GoogleMap extends React.Component {
         }
         this.setState({
             routeDataArrayForStepper: [],
-            isBusNoVisible: true
+            isBusNoVisible: true,
+            isFetchingPrediction: false
         })
         this.createRoute(allBusStopsArray);
     }
@@ -529,21 +536,22 @@ class GoogleMap extends React.Component {
 
             let newState = { ...this.state };
             newState.isBusNoVisible = false;
+            newState.isFetchingPrediction = true;
             this.setState(newState)
 
-            let newRouteTillDest = [];
-            for (var i = 0; i < routeDataArray.length; i++) {
-                if (routeDataArray[i].stop_id === destinationMarker.get('stop_id')) {
-                    newRouteTillDest.push(routeDataArray[i]);
-                    break;
-                } else {
-                    newRouteTillDest.push(routeDataArray[i]);
-                }
-            }
-            this.setState({
-                routeDataArrayForStepper: newRouteTillDest
-            })
-            this.createRoute(newRouteTillDest);
+            // let newRouteTillDest = [];
+            // for (var i = 0; i < routeDataArray.length; i++) {
+            //     if (routeDataArray[i].stop_id === destinationMarker.get('stop_id')) {
+            //         newRouteTillDest.push(routeDataArray[i]);
+            //         break;
+            //     } else {
+            //         newRouteTillDest.push(routeDataArray[i]);
+            //     }
+            // }
+            // this.setState({
+            //     routeDataArrayForStepper: newRouteTillDest
+            // })
+            // this.createRoute(newRouteTillDest);
             routeDetailsObject = {
                 "route": busNoAndDirection[0].trim(),
                 "direction": parseInt(busNoAndDirection[1].replace(")", "").trim()),
@@ -551,8 +559,11 @@ class GoogleMap extends React.Component {
                 "start_program_number": routeDataArray[0].program_number,
                 "dest_stop_id": destinationMarker.get('stop_id'),
                 "dest_program_number": destinationMarker.get('program_number'),
-                "user_id": this.props.user.user_id
+                "user_id": this.props.user.user_id,
+                "datetime_input": moment(this.state.dateTimeValue).format('YYYY-MM-DDTHH:mm:ss'),
+                "isFromRecentRoutes": false
             }
+            this.generatePrediction(routeDetailsObject);
         } else {
             if (sourceMarker != null && sourceMarker.get('stop_id') === marker.get('stop_id')) {
                 return;
@@ -588,21 +599,22 @@ class GoogleMap extends React.Component {
 
             let newState = { ...this.state };
             newState.isBusNoVisible = false;
+            newState.isFetchingPrediction = true;
             this.setState(newState)
 
-            let newRouteTillDest = [];
-            for (let i = 0; i < routeDataArray.length; i++) {
-                if (routeDataArray[i].stop_id === sourceMarker.get('stop_id')) {
-                    newRouteTillDest.push(routeDataArray[i]);
-                    break;
-                } else {
-                    newRouteTillDest.push(routeDataArray[i]);
-                }
-            }
-            this.setState({
-                routeDataArrayForStepper: newRouteTillDest.slice().reverse()
-            })
-            this.createRoute(newRouteTillDest);
+            // let newRouteTillDest = [];
+            // for (let i = 0; i < routeDataArray.length; i++) {
+            //     if (routeDataArray[i].stop_id === sourceMarker.get('stop_id')) {
+            //         newRouteTillDest.push(routeDataArray[i]);
+            //         break;
+            //     } else {
+            //         newRouteTillDest.push(routeDataArray[i]);
+            //     }
+            // }
+            // this.setState({
+            //     routeDataArrayForStepper: newRouteTillDest.slice().reverse()
+            // })
+            // this.createRoute(newRouteTillDest);
             routeDetailsObject = {
                 "route": busNoAndDirection[0].trim(),
                 "direction": parseInt(busNoAndDirection[1].replace(")", "").trim()),
@@ -610,12 +622,33 @@ class GoogleMap extends React.Component {
                 "start_program_number": sourceMarker.get('program_number'),
                 "dest_stop_id": destinationMarker.get('stop_id'),
                 "dest_program_number": routeDataArray[0].program_number,
-                "user_id": this.props.user.user_id
+                "user_id": this.props.user.user_id,
+                "datetime_input": moment(this.state.dateTimeValue).format('YYYY-MM-DDTHH:mm:ss'),
+                "isFromRecentRoutes": false
             }
+            this.generatePrediction(routeDetailsObject);
         }
         if (this.props.isAuthenticated) {
             this.saveLatestRoute(routeDetailsObject);
         }
+    }
+
+    generatePrediction = (routeDetailsObject) => {
+        axios.post(API_URL + "api/arrival/predict", routeDetailsObject).then(
+            res => {
+                console.log(res.data);
+                this.setState({
+                    routeDataArrayForStepper: res.data,
+                    isFetchingPrediction: false
+                })
+                if (!this.state.isDestinationToggled) {
+                    this.createRoute(res.data);
+                } else {
+                    this.createRoute(res.data.slice().reverse());
+                }
+            },
+            err => { console.log("error in generatePrediction", err) }
+        )
     }
 
     createRoute = (res) => {
@@ -797,8 +830,50 @@ class GoogleMap extends React.Component {
 
     handleOnchangeDateTime = (date, value) => {
         let newState = { ...this.state };
-        newState.dateTimeValue = date;
-        this.setState(newState);
+        if (sourceMarker !== null && destinationMarker !== null) {
+            newState.dateTimeValue = date;
+            newState.isFetchingPrediction = true;
+            this.setState(newState);
+            const busNoAndDirection = this.state.busToggleButton.split('(');
+            let routeDetailsObject = null;
+            if (!this.state.isDestinationToggled) {
+                routeDetailsObject = {
+                    "route": busNoAndDirection[0].trim(),
+                    "direction": parseInt(busNoAndDirection[1].replace(")", "").trim()),
+                    "start_stop_id": sourceMarker.get('stop_id'),
+                    "start_program_number": routeDataArray[0].program_number,
+                    "dest_stop_id": destinationMarker.get('stop_id'),
+                    "dest_program_number": destinationMarker.get('program_number'),
+                    "user_id": this.props.user.user_id,
+                    "datetime_input": moment(date).format('YYYY-MM-DDTHH:mm:ss'),
+                    "isFromRecentRoutes": false
+                }
+            } else {
+                routeDetailsObject = {
+                    "route": busNoAndDirection[0].trim(),
+                    "direction": parseInt(busNoAndDirection[1].replace(")", "").trim()),
+                    "start_stop_id": sourceMarker.get('stop_id'),
+                    "start_program_number": sourceMarker.get('program_number'),
+                    "dest_stop_id": destinationMarker.get('stop_id'),
+                    "dest_program_number": routeDataArray[0].program_number,
+                    "user_id": this.props.user.user_id,
+                    "datetime_input": moment(date).format('YYYY-MM-DDTHH:mm:ss'),
+                    "isFromRecentRoutes": false
+                }
+            }
+            console.log(routeDetailsObject);
+            axios.post(API_URL + "api/arrival/predict", routeDetailsObject).then(
+                res => this.setState({
+                    routeDataArrayForStepper: res.data,
+                    isFetchingPrediction: false
+                }),
+                err => console.log("error in handleOnchangeDateTime when generating prediction", err)
+            )
+        } else {
+            newState.dateTimeValue = date;
+            newState.isFetchingPrediction = false;
+            this.setState(newState);
+        }
     }
 
     handleOnSourceDestToggleChange = () => {
@@ -809,6 +884,7 @@ class GoogleMap extends React.Component {
         newState.routeDataArrayForStepper = [];
         newState.activeIdForUsers = 0;
         newState.isBusNoVisible = false;
+        newState.isFetchingPrediction = false;
         newState.isDestinationToggled = !this.state.isDestinationToggled
         if (newState.isDestinationToggled) {
             newState.searchValue = "Search destination stop";
@@ -836,7 +912,14 @@ class GoogleMap extends React.Component {
 
     handleOnclickForLatestRoutes = (id, bus_number, direction) => {
         if (this.state.activeIdForUsers !== id) {
-            axios.get(API_URL + "api/routes/getall/waypoints/" + id).then(
+            // axios.get(API_URL + "api/routes/getall/waypoints/" + id).then(
+            const routeDetailsObject = {
+                "datetime_input": moment(this.state.dateTimeValue).format('YYYY-MM-DDTHH:mm:ss'),
+                "isFromRecentRoutes": true,
+                "id": id
+            }
+            this.setState({ isFetchingPrediction: true });
+            axios.post(API_URL + "api/arrival/predict", routeDetailsObject).then(
                 resp => {
                     const res = resp.data;
 
@@ -848,15 +931,21 @@ class GoogleMap extends React.Component {
                     newState.routeDataArrayForStepper = [];
                     // newState.startBusStopValue = { title: '' };
                     newState.isBusNoVisible = false;
+                    newState.isFetchingPrediction = false;
                     this.setState(newState);
                     sourceMarker = null;
                     destinationMarker = null;
                     clearAllMarkersForStart();
                     this.removeRoute();
-                    routeDataArray = [];
+                    // routeDataArray = [];
                     allBusStopsArray = [];
                     this.markersOnMap = [];
 
+                    routeDataArray = res;
+                    if(this.state.isDestinationToggled) {
+                        routeDataArray = res.slice().reverse();
+                    }
+                    
                     // create markers
                     for (let d = 0; d < res.length; d++) {
                         let marker = null;
@@ -1087,23 +1176,37 @@ class GoogleMap extends React.Component {
                                 </Grid>
                             </MuiPickersUtilsProvider>
 
-                            {sourceMarker && destinationMarker && (
+                            {this.state.isFetchingPrediction && (
+                                <LinearProgress />
+                            )}
+
+                            {sourceMarker && destinationMarker && !this.state.isFetchingPrediction && (
                                 <div style={{ maxHeight: '315px', overflow: 'auto' }}>
                                     <Accordion>
                                         <AccordionSummary
                                             expandIcon={<ExpandMoreIcon />}
                                         >
-                                            <Typography>Total travel time</Typography>
+                                            <Typography>
+                                                Total travel time: {Math.round((this.state.routeDataArrayForStepper[this.state.routeDataArrayForStepper.length - 1].arrival_time
+                                                    - this.state.routeDataArrayForStepper[0].arrival_time) / 60)} min
+
+                                            </Typography>
                                         </AccordionSummary>
                                         <AccordionDetails>
                                             <div style={{ height: '200px', overflow: 'auto', width: "100%" }}>
                                                 <Stepper orientation="vertical" style={{ backgroundColor: "transparent" }}>
                                                     {this.state.routeDataArrayForStepper.map((busData, index) => (
                                                         <Step key={index} active>
-                                                            <StepLabel>{busData.stop_name + " (" + busData.stop_id + ")"}</StepLabel>
-                                                            <StepContent>
-                                                                <Typography variant="caption">Estimated travel time:</Typography>
-                                                            </StepContent>
+                                                            <StepLabel>
+                                                                {busData.stop_name + " (" + busData.stop_id + ")"}: {moment.utc(busData.arrival_time * 1000).format('h:mm A')}
+                                                            </StepLabel>
+                                                            {this.state.routeDataArrayForStepper.length - 1 !== index && (
+                                                                <StepContent>
+                                                                    <Typography variant="caption">
+                                                                        ETT between stations: {Math.round(busData.section_travel_time / 60)} min
+                                                                    </Typography>
+                                                                </StepContent>
+                                                            )}
                                                         </Step>
                                                     ))}
                                                 </Stepper>
