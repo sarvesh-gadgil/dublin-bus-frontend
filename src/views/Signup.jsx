@@ -22,7 +22,6 @@ import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff'; 
 import OutlinedInput from "@material-ui/core/OutlinedInput";
 import InputLabel from "@material-ui/core/InputLabel";
-import login_banner from '../images/login_banner.jpg';
 import axios from 'axios';
 import { API_URL } from '../constants';
 
@@ -133,7 +132,6 @@ export class signup extends React.Component{
      
       const form = new FormData(event.target);
       console.log(form);
-      //var letterNumber = /^[0-9]+$/;
       if(data.first_name.length > 50  || data.first_name.length < 1|| (/[^a-zA-Z]/.test(data.first_name))) {
           this.setState({"isFirstNameError" : true});
       }else if(data.last_name.length > 50 || data.last_name.length < 1|| (/[^a-zA-Z]/.test(data.last_name))){
@@ -162,12 +160,13 @@ export class signup extends React.Component{
         console.log(axios);
         axios.post(API_URL+'api/user/create',data,null).then((response)=> {
             console.log(response);
-          if(response.status == 200){
-            this.setState({first_name : '',last_name : '',username : '',password : '', success: true});
+          if(response.status == 200 || response.status == 201){
+            this.setState({firstName : '',lastName : '',email : '',password : '', confirmpassword: '',success: true});
              setTimeout(() => {this.setState({"success":''})}, 3000);
 
+
          }else
-          this.setState({first_name : '',last_name : '',username : '',password : '', failure: true});
+          this.setState({failure: true});
           setTimeout(() => {this.setState({"failure":''})}, 3000);
          }
                 
@@ -337,6 +336,8 @@ export class signup extends React.Component{
           </Grid>
           </Grid>
         </form>
+  
+          
       </div>
       <Box mt={5}>
         <Copyright />
