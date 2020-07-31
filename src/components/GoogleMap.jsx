@@ -918,34 +918,33 @@ class GoogleMap extends React.Component {
                 "isFromRecentRoutes": true,
                 "id": id
             }
-            this.setState({ isFetchingPrediction: true });
+            // Reset everything
+            let newState = { ...this.state };
+            newState.startBusStopSearchedValues = [];
+            newState.busArrivingAtMarkers = [];
+            newState.busToggleButton = '';
+            newState.routeDataArrayForStepper = [];
+            // newState.startBusStopValue = { title: '' };
+            newState.isBusNoVisible = false;
+            newState.isFetchingPrediction = true;
+            this.setState(newState);
+            sourceMarker = null;
+            destinationMarker = null;
+            clearAllMarkersForStart();
+            this.removeRoute();
+            // routeDataArray = [];
+            allBusStopsArray = [];
+            this.markersOnMap = [];
+            // this.setState({ isFetchingPrediction: true });
+
             axios.post(API_URL + "api/arrival/predict", routeDetailsObject).then(
                 resp => {
                     const res = resp.data;
-
-                    // Reset everything
-                    let newState = { ...this.state };
-                    newState.startBusStopSearchedValues = [];
-                    newState.busArrivingAtMarkers = [];
-                    newState.busToggleButton = '';
-                    newState.routeDataArrayForStepper = [];
-                    // newState.startBusStopValue = { title: '' };
-                    newState.isBusNoVisible = false;
-                    newState.isFetchingPrediction = false;
-                    this.setState(newState);
-                    sourceMarker = null;
-                    destinationMarker = null;
-                    clearAllMarkersForStart();
-                    this.removeRoute();
-                    // routeDataArray = [];
-                    allBusStopsArray = [];
-                    this.markersOnMap = [];
-
                     routeDataArray = res;
-                    if(this.state.isDestinationToggled) {
+                    if (this.state.isDestinationToggled) {
                         routeDataArray = res.slice().reverse();
                     }
-                    
+
                     // create markers
                     for (let d = 0; d < res.length; d++) {
                         let marker = null;
@@ -999,7 +998,8 @@ class GoogleMap extends React.Component {
                     this.setState({
                         busToggleButton: bus_number + "(" + direction + ")",
                         routeDataArrayForStepper: res,
-                        activeIdForUsers: id
+                        activeIdForUsers: id,
+                        isFetchingPrediction: false 
                     })
 
                     // create route
