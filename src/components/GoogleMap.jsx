@@ -40,6 +40,10 @@ import AccordionSummary from '@material-ui/core/AccordionSummary';
 import AccordionDetails from '@material-ui/core/AccordionDetails';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import LinearProgress from '@material-ui/core/LinearProgress';
+import Card from '@material-ui/core/Card';
+import CloudRoundedIcon from '@material-ui/icons/CloudRounded';
+import WbSunnyRoundedIcon from '@material-ui/icons/WbSunnyRounded';
+import GrainRoundedIcon from '@material-ui/icons/GrainRounded';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -999,7 +1003,7 @@ class GoogleMap extends React.Component {
                         busToggleButton: bus_number + "(" + direction + ")",
                         routeDataArrayForStepper: res,
                         activeIdForUsers: id,
-                        isFetchingPrediction: false 
+                        isFetchingPrediction: false
                     })
 
                     // create route
@@ -1182,6 +1186,29 @@ class GoogleMap extends React.Component {
 
                             {sourceMarker && destinationMarker && !this.state.isFetchingPrediction && (
                                 <div style={{ maxHeight: '315px', overflow: 'auto' }}>
+                                    <br />
+                                    <Card style={{ padding: "10px" }} variant="outlined">
+                                        <Grid container spacing={1}
+                                            direction="row"
+                                            justify="center"
+                                            alignItems="center"
+                                        >
+                                            <Grid item>
+                                                <WbSunnyRoundedIcon style={{ fontSize: "50px", color: "orange" }} />
+                                                {/* <CloudRoundedIcon style={{ fontSize: "50px", color: "lightblue" }} /> */}
+                                                {/* <GrainRoundedIcon style={{fontSize:"50px", color:"lightblue"}}/> */}
+                                            </Grid>
+                                            <Grid item>
+                                                <Typography variant="h5" component="h2">
+                                                    10°C Sunny
+                                            </Typography>
+                                                <Typography color="textSecondary" style={{ fontSize: "12px" }} align="center">
+                                                    26°C / 18°C
+                                            </Typography>
+                                            </Grid>
+                                        </Grid>
+                                    </Card>
+                                    <br />
                                     <Accordion>
                                         <AccordionSummary
                                             expandIcon={<ExpandMoreIcon />}
