@@ -44,6 +44,7 @@ import Card from '@material-ui/core/Card';
 import CloudRoundedIcon from '@material-ui/icons/CloudRounded';
 import WbSunnyRoundedIcon from '@material-ui/icons/WbSunnyRounded';
 import GrainRoundedIcon from '@material-ui/icons/GrainRounded';
+import AcUnitRoundedIcon from '@material-ui/icons/AcUnitRounded';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -144,7 +145,17 @@ class GoogleMap extends React.Component {
             latestRoutesForUser: [],
             activeIdForUsers: 0,
             isLatestRoutesDisabled: false,
-            isFetchingPrediction: false
+            isFetchingPrediction: false,
+            weatherDetails: {
+                temp: "NA",
+                temp_min: "NA",
+                temp_max: "NA",
+                weather_main: "NA"
+            },
+            error: {
+                isErrorAlertOpen: false,
+                message: "Something went wrong"
+            }
         }
         // this.mapObject = null;
         this.map = React.createRef();
@@ -635,12 +646,50 @@ class GoogleMap extends React.Component {
         if (this.props.isAuthenticated) {
             this.saveLatestRoute(routeDetailsObject);
         }
+        this.getFutureWeatherPrediction(routeDetailsObject)
+    }
+
+    getFutureWeatherPrediction = (routeDetailsObject) => {
+        axios.post(API_URL + "api/arrival/weather", routeDetailsObject).then(
+            res => {
+                if (res.status === 200) {
+                    this.setState({
+                        weatherDetails: {
+                            temp: res.data[0].temp,
+                            temp_min: res.data[0].temp_min,
+                            temp_max: res.data[0].temp_max,
+                            weather_main: res.data[0].weather_main
+                        }
+                    })
+                } else {
+                    this.setState({
+                        weatherDetails: {
+                            temp: "NA",
+                            temp_min: "NA",
+                            temp_max: "NA",
+                            weather_main: "NA"
+                        }
+                    })
+                }
+            },
+            err => { 
+                console.log("error in getFutureWeatherPrediction", err)
+                this.setState({
+                    weatherDetails: {
+                        temp: "NA",
+                        temp_min: "NA",
+                        temp_max: "NA",
+                        weather_main: "NA"
+                    }
+                }) 
+            }
+        )
     }
 
     generatePrediction = (routeDetailsObject) => {
+        console.log(routeDetailsObject);
         axios.post(API_URL + "api/arrival/predict", routeDetailsObject).then(
             res => {
-                console.log(res.data);
                 this.setState({
                     routeDataArrayForStepper: res.data,
                     isFetchingPrediction: false
@@ -651,7 +700,17 @@ class GoogleMap extends React.Component {
                     this.createRoute(res.data.slice().reverse());
                 }
             },
-            err => { console.log("error in generatePrediction", err) }
+            err => { 
+                console.log("error in generatePrediction", err)
+                this.deselectDestinationMarker()
+                this.setState({ 
+                    error: {
+                        isErrorAlertOpen: true,
+                        message: err.response.data[0]
+                    },
+                    isFetchingPrediction: false
+                })
+            }
         )
     }
 
@@ -866,12 +925,23 @@ class GoogleMap extends React.Component {
                 }
             }
             console.log(routeDetailsObject);
+            this.getFutureWeatherPrediction(routeDetailsObject)
             axios.post(API_URL + "api/arrival/predict", routeDetailsObject).then(
                 res => this.setState({
                     routeDataArrayForStepper: res.data,
                     isFetchingPrediction: false
                 }),
-                err => console.log("error in handleOnchangeDateTime when generating prediction", err)
+                err => {
+                    console.log("error in handleOnchangeDateTime when generating prediction", err)
+                    this.deselectDestinationMarker()
+                    this.setState({ 
+                        error: {
+                            isErrorAlertOpen: true,
+                            message: err.response.data[0]
+                        },
+                        isFetchingPrediction: false
+                    })
+                }
             )
         } else {
             newState.dateTimeValue = date;
@@ -913,6 +983,17 @@ class GoogleMap extends React.Component {
         }
         this.setState({ isAlertOpen: false })
     }
+    
+    closeErrorAlert = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        this.setState({ 
+            error: {
+                isErrorAlertOpen: false
+            } 
+        })
+    }
 
     handleOnclickForLatestRoutes = (id, bus_number, direction) => {
         if (this.state.activeIdForUsers !== id) {
@@ -922,6 +1003,7 @@ class GoogleMap extends React.Component {
                 "isFromRecentRoutes": true,
                 "id": id
             }
+            console.log(routeDetailsObject);
             // Reset everything
             let newState = { ...this.state };
             newState.startBusStopSearchedValues = [];
@@ -931,6 +1013,7 @@ class GoogleMap extends React.Component {
             // newState.startBusStopValue = { title: '' };
             newState.isBusNoVisible = false;
             newState.isFetchingPrediction = true;
+            newState.isLatestRoutesDisabled = true;
             this.setState(newState);
             sourceMarker = null;
             destinationMarker = null;
@@ -940,6 +1023,8 @@ class GoogleMap extends React.Component {
             allBusStopsArray = [];
             this.markersOnMap = [];
             // this.setState({ isFetchingPrediction: true });
+
+            this.getFutureWeatherPrediction(routeDetailsObject)
 
             axios.post(API_URL + "api/arrival/predict", routeDetailsObject).then(
                 resp => {
@@ -1003,13 +1088,24 @@ class GoogleMap extends React.Component {
                         busToggleButton: bus_number + "(" + direction + ")",
                         routeDataArrayForStepper: res,
                         activeIdForUsers: id,
-                        isFetchingPrediction: false
+                        isFetchingPrediction: false,
+                        isLatestRoutesDisabled: false
                     })
 
                     // create route
                     this.createRouteUsingMultipleWaypoints(res);
                 },
-                err => { console.log("error in handleOnclickForLatestRoutes", err) }
+                err => { 
+                    console.log("error in handleOnclickForLatestRoutes", err)
+                    this.setState({ 
+                        error: {
+                            isErrorAlertOpen: true,
+                            message: err.response.data[0]
+                        },
+                        isFetchingPrediction: false,
+                        isLatestRoutesDisabled: false 
+                    })
+                }
             )
         }
     }
@@ -1193,19 +1289,45 @@ class GoogleMap extends React.Component {
                                             justify="center"
                                             alignItems="center"
                                         >
-                                            <Grid item>
-                                                <WbSunnyRoundedIcon style={{ fontSize: "50px", color: "orange" }} />
-                                                {/* <CloudRoundedIcon style={{ fontSize: "50px", color: "lightblue" }} /> */}
-                                                {/* <GrainRoundedIcon style={{fontSize:"50px", color:"lightblue"}}/> */}
-                                            </Grid>
-                                            <Grid item>
-                                                <Typography variant="h5" component="h2">
-                                                    10°C Sunny
-                                            </Typography>
-                                                <Typography color="textSecondary" style={{ fontSize: "12px" }} align="center">
-                                                    26°C / 18°C
-                                            </Typography>
-                                            </Grid>
+                                            {this.state.weatherDetails.temp === "NA" ? (
+                                                <>
+                                                        <Typography variant="h5" component="h2">
+                                                            No future weather prediction available
+                                                        </Typography>  
+                                                </>
+                                            ) : (
+                                                    <>
+                                                        <Grid item>
+                                                            {(this.state.weatherDetails.weather_main === "Clouds" || 
+                                                                this.state.weatherDetails.weather_main === "Mist" || 
+                                                                this.state.weatherDetails.weather_main === "Fog" || 
+                                                                this.state.weatherDetails.weather_main === "Smoke") && (
+                                                                <CloudRoundedIcon style={{ fontSize: "50px", color: "lightblue" }} />
+                                                            )}
+
+                                                            {(this.state.weatherDetails.weather_main === "Rain" || 
+                                                                this.state.weatherDetails.weather_main === "Drizzle") && (
+                                                                <GrainRoundedIcon style={{fontSize:"50px", color:"lightblue"}}/>
+                                                            )}
+
+                                                            {(this.state.weatherDetails.weather_main === "Clear") && (
+                                                                <WbSunnyRoundedIcon style={{ fontSize: "50px", color: "orange" }} />
+                                                            )}
+
+                                                            {(this.state.weatherDetails.weather_main === "Snow") && (
+                                                                <AcUnitRoundedIcon style={{ fontSize: "50px", color: "black" }} />
+                                                            )}
+                                                        </Grid>
+                                                        <Grid item>
+                                                            <Typography variant="h5" component="h2">
+                                                                {this.state.weatherDetails.temp}°C {this.state.weatherDetails.weather_main}
+                                                            </Typography>
+                                                            <Typography color="textSecondary" style={{ fontSize: "12px" }} align="center">
+                                                            {this.state.weatherDetails.temp_max}°C/{this.state.weatherDetails.temp_min}°C
+                                                            </Typography>
+                                                        </Grid>
+                                                    </>
+                                                )}
                                         </Grid>
                                     </Card>
                                     <br />
@@ -1216,7 +1338,7 @@ class GoogleMap extends React.Component {
                                             <Typography>
                                                 Total travel time: {Math.round((this.state.routeDataArrayForStepper[this.state.routeDataArrayForStepper.length - 1].arrival_time
                                                     - this.state.routeDataArrayForStepper[0].arrival_time) / 60)} min
-
+    
                                             </Typography>
                                         </AccordionSummary>
                                         <AccordionDetails>
@@ -1318,6 +1440,16 @@ class GoogleMap extends React.Component {
                             >
                                 <Alert onClose={this.closeAlert.bind(this)} severity="info">
                                     Switched to {this.state.searchValue}
+                                </Alert>
+                            </Snackbar>
+                            <Snackbar
+                                open={this.state.error.isErrorAlertOpen}
+                                autoHideDuration={3000}
+                                onClose={this.closeErrorAlert.bind(this)}
+                                anchorOrigin={{ horizontal: "center", vertical: "top" }}
+                            >
+                                <Alert onClose={this.closeErrorAlert.bind(this)} severity="error">
+                                    {this.state.error.message}
                                 </Alert>
                             </Snackbar>
                         </Paper>
