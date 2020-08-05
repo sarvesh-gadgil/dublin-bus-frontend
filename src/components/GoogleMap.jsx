@@ -40,6 +40,12 @@ import AccordionSummary from '@material-ui/core/AccordionSummary';
 import AccordionDetails from '@material-ui/core/AccordionDetails';
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import LinearProgress from '@material-ui/core/LinearProgress';
+import Card from '@material-ui/core/Card';
+import CloudRoundedIcon from '@material-ui/icons/CloudRounded';
+import WbSunnyRoundedIcon from '@material-ui/icons/WbSunnyRounded';
+import GrainRoundedIcon from '@material-ui/icons/GrainRounded';
+import AcUnitRoundedIcon from '@material-ui/icons/AcUnitRounded';
+import FlashOnRoundedIcon from '@material-ui/icons/FlashOnRounded';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -140,7 +146,19 @@ class GoogleMap extends React.Component {
             latestRoutesForUser: [],
             activeIdForUsers: 0,
             isLatestRoutesDisabled: false,
-            isFetchingPrediction: false
+            isFetchingPrediction: false,
+            weatherDetails: {
+                temp: "NA",
+                temp_min: "NA",
+                temp_max: "NA",
+                weather_main: "NA",
+                feels_like: "NA",
+                wind_speed: "NA"
+            },
+            error: {
+                isErrorAlertOpen: false,
+                message: "Something went wrong"
+            }
         }
         // this.mapObject = null;
         this.map = React.createRef();
@@ -164,7 +182,15 @@ class GoogleMap extends React.Component {
     getLatestRoutes = () => {
         axios.get(API_URL + "api/routes/getall/latest/" + this.props.user.user_id).then(
             res => this.setState({ latestRoutesForUser: res.data }),
-            err => { console.log("error in getLatestRoutes", err) }
+            err => { 
+                console.log("error in getLatestRoutes", err) 
+                this.setState({ 
+                    error: {
+                        isErrorAlertOpen: true,
+                        message: "Error in getting latest routes"
+                    }
+                })
+            }
         )
     }
 
@@ -288,6 +314,12 @@ class GoogleMap extends React.Component {
                         this.setState(newState);
                     }, err => {
                         console.log('error in startBusStopOnInputChange', err)
+                        this.setState({ 
+                            error: {
+                                isErrorAlertOpen: true,
+                                message: "Error in getting bus stop suggestions"
+                            }
+                        })
                     })
             } else {
                 let newState = { ...this.state };
@@ -388,6 +420,12 @@ class GoogleMap extends React.Component {
                     },
                     err => {
                         console.log('error in startBusStopOnSelect', err)
+                        this.setState({ 
+                            error: {
+                                isErrorAlertOpen: true,
+                                message: "Error in selecting bus stop"
+                            }
+                        })
                     })
             } else {
                 if (!this.state.isDestinationToggled) {
@@ -471,6 +509,12 @@ class GoogleMap extends React.Component {
                 this.createRoute(res.data);
             }, err => {
                 console.log("error in handleBusToggle", err);
+                this.setState({ 
+                    error: {
+                        isErrorAlertOpen: true,
+                        message: "Error in selecting a bus"
+                    }
+                })
             })
         }
     }
@@ -631,12 +675,56 @@ class GoogleMap extends React.Component {
         if (this.props.isAuthenticated) {
             this.saveLatestRoute(routeDetailsObject);
         }
+        this.getFutureWeatherPrediction(routeDetailsObject)
+    }
+
+    getFutureWeatherPrediction = (routeDetailsObject) => {
+        axios.post(API_URL + "api/arrival/weather", routeDetailsObject).then(
+            res => {
+                if (res.status === 200) {
+                    this.setState({
+                        weatherDetails: {
+                            temp: res.data[0].temp,
+                            temp_min: res.data[0].temp_min,
+                            temp_max: res.data[0].temp_max,
+                            weather_main: res.data[0].weather_main,
+                            feels_like: res.data[0].feels_like,
+                            wind_speed: res.data[0].wind_speed
+                        }
+                    })
+                } else {
+                    this.setState({
+                        weatherDetails: {
+                            temp: "NA",
+                            temp_min: "NA",
+                            temp_max: "NA",
+                            weather_main: "NA",
+                            feels_like: "NA",
+                            wind_speed: "NA"
+                        }
+                    })
+                }
+            },
+            err => { 
+                console.log("error in getFutureWeatherPrediction", err)
+                this.setState({
+                    weatherDetails: {
+                        temp: "NA",
+                        temp_min: "NA",
+                        temp_max: "NA",
+                        weather_main: "NA",
+                        feels_like: "NA",
+                        wind_speed: "NA"
+                    }
+                }) 
+            }
+        )
     }
 
     generatePrediction = (routeDetailsObject) => {
+        console.log(routeDetailsObject);
         axios.post(API_URL + "api/arrival/predict", routeDetailsObject).then(
             res => {
-                console.log(res.data);
                 this.setState({
                     routeDataArrayForStepper: res.data,
                     isFetchingPrediction: false
@@ -647,7 +735,17 @@ class GoogleMap extends React.Component {
                     this.createRoute(res.data.slice().reverse());
                 }
             },
-            err => { console.log("error in generatePrediction", err) }
+            err => { 
+                console.log("error in generatePrediction", err)
+                this.deselectDestinationMarker()
+                this.setState({ 
+                    error: {
+                        isErrorAlertOpen: true,
+                        message: err.response ? err.response.data[0] : "Error in getting prediction" 
+                    },
+                    isFetchingPrediction: false
+                })
+            }
         )
     }
 
@@ -862,12 +960,47 @@ class GoogleMap extends React.Component {
                 }
             }
             console.log(routeDetailsObject);
+            this.getFutureWeatherPrediction(routeDetailsObject)
             axios.post(API_URL + "api/arrival/predict", routeDetailsObject).then(
                 res => this.setState({
                     routeDataArrayForStepper: res.data,
                     isFetchingPrediction: false
                 }),
-                err => console.log("error in handleOnchangeDateTime when generating prediction", err)
+                err => {
+                    console.log("error in handleOnchangeDateTime when generating prediction", err)
+                    if(this.state.activeIdForUsers !== 0) {
+                        console.log("inside")
+                        sourceMarker = null;
+                        destinationMarker = null;
+                        clearAllMarkersForStart();
+                        this.removeRoute();
+                        allBusStopsArray = [];
+                        this.markersOnMap = [];
+                        let newState = { ...this.state };
+                        newState.startBusStopSearchedValues = [];
+                        newState.busArrivingAtMarkers = [];
+                        newState.busToggleButton = '';
+                        newState.routeDataArrayForStepper = [];
+                        newState.isBusNoVisible = false;
+                        newState.isFetchingPrediction = false;
+                        newState.isLatestRoutesDisabled = false;
+                        newState.activeIdForUsers = 0;
+                        newState.error = {
+                            isErrorAlertOpen: true,
+                            message: err.response ? err.response.data[0] : "Error in getting prediction" 
+                        }
+                        this.setState(newState);
+                    } else {
+                        this.deselectDestinationMarker()
+                        this.setState({ 
+                            error: {
+                                isErrorAlertOpen: true,
+                                message: err.response ? err.response.data[0] : "Error in getting prediction" 
+                            },
+                            isFetchingPrediction: false
+                        })
+                    }
+                }
             )
         } else {
             newState.dateTimeValue = date;
@@ -909,6 +1042,17 @@ class GoogleMap extends React.Component {
         }
         this.setState({ isAlertOpen: false })
     }
+    
+    closeErrorAlert = (event, reason) => {
+        if (reason === 'clickaway') {
+            return;
+        }
+        this.setState({ 
+            error: {
+                isErrorAlertOpen: false
+            } 
+        })
+    }
 
     handleOnclickForLatestRoutes = (id, bus_number, direction) => {
         if (this.state.activeIdForUsers !== id) {
@@ -918,6 +1062,7 @@ class GoogleMap extends React.Component {
                 "isFromRecentRoutes": true,
                 "id": id
             }
+            console.log(routeDetailsObject);
             // Reset everything
             let newState = { ...this.state };
             newState.startBusStopSearchedValues = [];
@@ -927,6 +1072,7 @@ class GoogleMap extends React.Component {
             // newState.startBusStopValue = { title: '' };
             newState.isBusNoVisible = false;
             newState.isFetchingPrediction = true;
+            newState.isLatestRoutesDisabled = true;
             this.setState(newState);
             sourceMarker = null;
             destinationMarker = null;
@@ -936,6 +1082,8 @@ class GoogleMap extends React.Component {
             allBusStopsArray = [];
             this.markersOnMap = [];
             // this.setState({ isFetchingPrediction: true });
+
+            this.getFutureWeatherPrediction(routeDetailsObject)
 
             axios.post(API_URL + "api/arrival/predict", routeDetailsObject).then(
                 resp => {
@@ -999,13 +1147,25 @@ class GoogleMap extends React.Component {
                         busToggleButton: bus_number + "(" + direction + ")",
                         routeDataArrayForStepper: res,
                         activeIdForUsers: id,
-                        isFetchingPrediction: false 
+                        isFetchingPrediction: false,
+                        isLatestRoutesDisabled: false
                     })
 
                     // create route
                     this.createRouteUsingMultipleWaypoints(res);
                 },
-                err => { console.log("error in handleOnclickForLatestRoutes", err) }
+                err => { 
+                    console.log("error in handleOnclickForLatestRoutes", err)
+                    this.setState({ 
+                        error: {
+                            isErrorAlertOpen: true,
+                            message: err.response ? err.response.data[0] : "Error in getting prediction"
+                        },
+                        isFetchingPrediction: false,
+                        isLatestRoutesDisabled: false,
+                        activeIdForUsers: 0
+                    })
+                }
             )
         }
     }
@@ -1013,7 +1173,15 @@ class GoogleMap extends React.Component {
     saveLatestRoute = (routeDetailsObject) => {
         axios.post(API_URL + "api/routes/save", routeDetailsObject).then(
             res => this.getLatestRoutes(),
-            err => console.log("error in saveLatestRoute", err)
+            err => {
+                console.log("error in saveLatestRoute", err)
+                this.setState({ 
+                    error: {
+                        isErrorAlertOpen: true,
+                        message: "Error in saving latest routes"
+                    }
+                })
+            }
         )
     }
 
@@ -1152,7 +1320,7 @@ class GoogleMap extends React.Component {
                                         id="date_picker"
                                         label="Pick journey date"
                                         format="dd/MM/yyyy"
-                                        maxDate={moment().add(4, 'days').format('YYYY-MM-DD')}
+                                        maxDate={moment().add(3, 'days').format('YYYY-MM-DD')}
                                         minDate={moment().format('YYYY-MM-DD')}
                                         value={this.state.dateTimeValue}
                                         onChange={this.handleOnchangeDateTime.bind(this)}
@@ -1182,6 +1350,59 @@ class GoogleMap extends React.Component {
 
                             {sourceMarker && destinationMarker && !this.state.isFetchingPrediction && (
                                 <div style={{ maxHeight: '315px', overflow: 'auto' }}>
+                                    <br />
+                                    <Card style={{ padding: "10px" }} variant="outlined">
+                                        <Grid container spacing={1}
+                                            direction="row"
+                                            justify="center"
+                                            alignItems="center"
+                                        >
+                                            {this.state.weatherDetails.temp === "NA" ? (
+                                                <>
+                                                    <Typography color="textSecondary">
+                                                        No future weather prediction available
+                                                    </Typography>  
+                                                </>
+                                            ) : (
+                                                    <>
+                                                        <Grid item>
+                                                            {(this.state.weatherDetails.weather_main === "Clouds" || 
+                                                                this.state.weatherDetails.weather_main === "Mist" || 
+                                                                this.state.weatherDetails.weather_main === "Fog" || 
+                                                                this.state.weatherDetails.weather_main === "Smoke") && (
+                                                                <CloudRoundedIcon style={{ fontSize: "50px", color: "lightblue" }} />
+                                                            )}
+
+                                                            {(this.state.weatherDetails.weather_main === "Rain" || 
+                                                                this.state.weatherDetails.weather_main === "Drizzle") && (
+                                                                 <>   
+                                                                    <FlashOnRoundedIcon style={{fontSize:"50px", color:"yellow"}}/>
+                                                                    <GrainRoundedIcon style={{fontSize:"50px", color:"lightblue"}}/>
+                                                                </>
+                                                            )}
+
+                                                            {(this.state.weatherDetails.weather_main === "Clear") && (
+                                                                <WbSunnyRoundedIcon style={{ fontSize: "50px", color: "orange" }} />
+                                                            )}
+
+                                                            {(this.state.weatherDetails.weather_main === "Snow") && (
+                                                                <AcUnitRoundedIcon style={{ fontSize: "50px", color: "black" }} />
+                                                            )}
+                                                        </Grid>
+                                                        <Grid item>
+                                                            <Typography variant="h5" component="h2">
+                                                                {this.state.weatherDetails.temp}°C {this.state.weatherDetails.weather_main}
+                                                            </Typography>
+                                                            <Typography color="textSecondary" style={{ fontSize: "12px" }} align="center">
+                                                                {/* {this.state.weatherDetails.temp_max}°C/{this.state.weatherDetails.temp_min}°C */}
+                                                                Feels Like: {this.state.weatherDetails.feels_like}°C
+                                                            </Typography>
+                                                        </Grid>
+                                                    </>
+                                                )}
+                                        </Grid>
+                                    </Card>
+                                    <br />
                                     <Accordion>
                                         <AccordionSummary
                                             expandIcon={<ExpandMoreIcon />}
@@ -1189,7 +1410,7 @@ class GoogleMap extends React.Component {
                                             <Typography>
                                                 Total travel time: {Math.round((this.state.routeDataArrayForStepper[this.state.routeDataArrayForStepper.length - 1].arrival_time
                                                     - this.state.routeDataArrayForStepper[0].arrival_time) / 60)} min
-
+    
                                             </Typography>
                                         </AccordionSummary>
                                         <AccordionDetails>
@@ -1291,6 +1512,16 @@ class GoogleMap extends React.Component {
                             >
                                 <Alert onClose={this.closeAlert.bind(this)} severity="info">
                                     Switched to {this.state.searchValue}
+                                </Alert>
+                            </Snackbar>
+                            <Snackbar
+                                open={this.state.error.isErrorAlertOpen}
+                                autoHideDuration={3000}
+                                onClose={this.closeErrorAlert.bind(this)}
+                                anchorOrigin={{ horizontal: "center", vertical: "top" }}
+                            >
+                                <Alert onClose={this.closeErrorAlert.bind(this)} severity="error">
+                                    {this.state.error.message}
                                 </Alert>
                             </Snackbar>
                         </Paper>

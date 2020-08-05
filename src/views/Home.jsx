@@ -1,24 +1,33 @@
 import React from 'react';
 import GoogleMap from '../components/GoogleMap';
-// import home_banner from '../images/home_banner.jpg';
 import './Home.css'
+import { connect } from 'react-redux';
+import { withRouter } from 'react-router-dom';
 
 class Home extends React.Component {
     render() {
         return (
-            // <div style={{
-            //     width: "100%",
-            //     height: "115vh",
-            //     backgroundImage: `url(${home_banner})`,
-            //     backgroundSize: 'cover',
-            //     padding: "8px"
-            // }}>
-            <div className="homeBanner">
-                <GoogleMap />
-                <br />
-            </div>
+            <>
+                {this.props.isAuthenticated ? (
+                    <div className="homeBannerForAuthenticated">
+                        <GoogleMap />
+                        <br />
+                    </div>
+                ) : (
+                        <div className="homeBannerForNotAuthenticated">
+                            <GoogleMap />
+                            <br />
+                        </div>
+                    )}
+            </>
         );
     }
 }
 
-export default Home;
+const mapStateToProps = (state) => {
+    return {
+        isAuthenticated: state.isAuthenticated
+    }
+}
+
+export default withRouter(connect(mapStateToProps)(Home));

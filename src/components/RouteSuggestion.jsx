@@ -4,7 +4,6 @@ import Button from '@material-ui/core/Button';
 import ButtonGroup from '@material-ui/core/ButtonGroup';
 import ArrowRightAltSharpIcon from '@material-ui/icons/ArrowRightAltSharp';
 import Paper from '@material-ui/core/Paper';
-import { Alert } from '@material-ui/lab';
 import Grid from '@material-ui/core/Grid';
 import { Timeline } from 'react-twitter-widgets';
 
@@ -55,9 +54,9 @@ const welcomeMessageAndSuggestion = (props) => {
                         </>
                     ) : (
                             <>
-                                <Alert severity="info" style={{ padding: "10px", backgroundColor: "transparent", fontSize: "15px", overflow: "auto" }}>
-                                    No recent Routes available. Try searching for different destinations!
-                                </Alert>
+                                <Typography color="textSecondary" style={{padding: "5px"}}>
+                                    No Recent Routes available. Try searching for different destinations!
+                                </Typography>
                             </>
                         )}
                 </Grid>
