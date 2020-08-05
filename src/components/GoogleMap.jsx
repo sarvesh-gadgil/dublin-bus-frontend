@@ -45,6 +45,7 @@ import CloudRoundedIcon from '@material-ui/icons/CloudRounded';
 import WbSunnyRoundedIcon from '@material-ui/icons/WbSunnyRounded';
 import GrainRoundedIcon from '@material-ui/icons/GrainRounded';
 import AcUnitRoundedIcon from '@material-ui/icons/AcUnitRounded';
+import FlashOnRoundedIcon from '@material-ui/icons/FlashOnRounded';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -150,7 +151,9 @@ class GoogleMap extends React.Component {
                 temp: "NA",
                 temp_min: "NA",
                 temp_max: "NA",
-                weather_main: "NA"
+                weather_main: "NA",
+                feels_like: "NA",
+                wind_speed: "NA"
             },
             error: {
                 isErrorAlertOpen: false,
@@ -684,7 +687,9 @@ class GoogleMap extends React.Component {
                             temp: res.data[0].temp,
                             temp_min: res.data[0].temp_min,
                             temp_max: res.data[0].temp_max,
-                            weather_main: res.data[0].weather_main
+                            weather_main: res.data[0].weather_main,
+                            feels_like: res.data[0].feels_like,
+                            wind_speed: res.data[0].wind_speed
                         }
                     })
                 } else {
@@ -693,7 +698,9 @@ class GoogleMap extends React.Component {
                             temp: "NA",
                             temp_min: "NA",
                             temp_max: "NA",
-                            weather_main: "NA"
+                            weather_main: "NA",
+                            feels_like: "NA",
+                            wind_speed: "NA"
                         }
                     })
                 }
@@ -705,7 +712,9 @@ class GoogleMap extends React.Component {
                         temp: "NA",
                         temp_min: "NA",
                         temp_max: "NA",
-                        weather_main: "NA"
+                        weather_main: "NA",
+                        feels_like: "NA",
+                        wind_speed: "NA"
                     }
                 }) 
             }
@@ -1311,7 +1320,7 @@ class GoogleMap extends React.Component {
                                         id="date_picker"
                                         label="Pick journey date"
                                         format="dd/MM/yyyy"
-                                        maxDate={moment().add(4, 'days').format('YYYY-MM-DD')}
+                                        maxDate={moment().add(3, 'days').format('YYYY-MM-DD')}
                                         minDate={moment().format('YYYY-MM-DD')}
                                         value={this.state.dateTimeValue}
                                         onChange={this.handleOnchangeDateTime.bind(this)}
@@ -1350,9 +1359,9 @@ class GoogleMap extends React.Component {
                                         >
                                             {this.state.weatherDetails.temp === "NA" ? (
                                                 <>
-                                                        <Typography variant="h5" component="h2">
-                                                            No future weather prediction available
-                                                        </Typography>  
+                                                    <Typography color="textSecondary">
+                                                        No future weather prediction available
+                                                    </Typography>  
                                                 </>
                                             ) : (
                                                     <>
@@ -1366,7 +1375,10 @@ class GoogleMap extends React.Component {
 
                                                             {(this.state.weatherDetails.weather_main === "Rain" || 
                                                                 this.state.weatherDetails.weather_main === "Drizzle") && (
-                                                                <GrainRoundedIcon style={{fontSize:"50px", color:"lightblue"}}/>
+                                                                 <>   
+                                                                    <FlashOnRoundedIcon style={{fontSize:"50px", color:"yellow"}}/>
+                                                                    <GrainRoundedIcon style={{fontSize:"50px", color:"lightblue"}}/>
+                                                                </>
                                                             )}
 
                                                             {(this.state.weatherDetails.weather_main === "Clear") && (
@@ -1382,7 +1394,8 @@ class GoogleMap extends React.Component {
                                                                 {this.state.weatherDetails.temp}°C {this.state.weatherDetails.weather_main}
                                                             </Typography>
                                                             <Typography color="textSecondary" style={{ fontSize: "12px" }} align="center">
-                                                            {this.state.weatherDetails.temp_max}°C/{this.state.weatherDetails.temp_min}°C
+                                                                {/* {this.state.weatherDetails.temp_max}°C/{this.state.weatherDetails.temp_min}°C */}
+                                                                Feels Like: {this.state.weatherDetails.feels_like}°C
                                                             </Typography>
                                                         </Grid>
                                                     </>
