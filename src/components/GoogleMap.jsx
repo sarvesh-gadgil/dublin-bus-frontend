@@ -179,7 +179,15 @@ class GoogleMap extends React.Component {
     getLatestRoutes = () => {
         axios.get(API_URL + "api/routes/getall/latest/" + this.props.user.user_id).then(
             res => this.setState({ latestRoutesForUser: res.data }),
-            err => { console.log("error in getLatestRoutes", err) }
+            err => { 
+                console.log("error in getLatestRoutes", err) 
+                this.setState({ 
+                    error: {
+                        isErrorAlertOpen: true,
+                        message: "Error in getting latest routes"
+                    }
+                })
+            }
         )
     }
 
@@ -303,6 +311,12 @@ class GoogleMap extends React.Component {
                         this.setState(newState);
                     }, err => {
                         console.log('error in startBusStopOnInputChange', err)
+                        this.setState({ 
+                            error: {
+                                isErrorAlertOpen: true,
+                                message: "Error in getting bus stop suggestions"
+                            }
+                        })
                     })
             } else {
                 let newState = { ...this.state };
@@ -403,6 +417,12 @@ class GoogleMap extends React.Component {
                     },
                     err => {
                         console.log('error in startBusStopOnSelect', err)
+                        this.setState({ 
+                            error: {
+                                isErrorAlertOpen: true,
+                                message: "Error in selecting bus stop"
+                            }
+                        })
                     })
             } else {
                 if (!this.state.isDestinationToggled) {
@@ -486,6 +506,12 @@ class GoogleMap extends React.Component {
                 this.createRoute(res.data);
             }, err => {
                 console.log("error in handleBusToggle", err);
+                this.setState({ 
+                    error: {
+                        isErrorAlertOpen: true,
+                        message: "Error in selecting a bus"
+                    }
+                })
             })
         }
     }
@@ -706,7 +732,7 @@ class GoogleMap extends React.Component {
                 this.setState({ 
                     error: {
                         isErrorAlertOpen: true,
-                        message: err.response.data[0]
+                        message: err.response ? err.response.data[0] : "Error in getting prediction" 
                     },
                     isFetchingPrediction: false
                 })
@@ -933,14 +959,38 @@ class GoogleMap extends React.Component {
                 }),
                 err => {
                     console.log("error in handleOnchangeDateTime when generating prediction", err)
-                    this.deselectDestinationMarker()
-                    this.setState({ 
-                        error: {
+                    if(this.state.activeIdForUsers !== 0) {
+                        console.log("inside")
+                        sourceMarker = null;
+                        destinationMarker = null;
+                        clearAllMarkersForStart();
+                        this.removeRoute();
+                        allBusStopsArray = [];
+                        this.markersOnMap = [];
+                        let newState = { ...this.state };
+                        newState.startBusStopSearchedValues = [];
+                        newState.busArrivingAtMarkers = [];
+                        newState.busToggleButton = '';
+                        newState.routeDataArrayForStepper = [];
+                        newState.isBusNoVisible = false;
+                        newState.isFetchingPrediction = false;
+                        newState.isLatestRoutesDisabled = false;
+                        newState.activeIdForUsers = 0;
+                        newState.error = {
                             isErrorAlertOpen: true,
-                            message: err.response.data[0]
-                        },
-                        isFetchingPrediction: false
-                    })
+                            message: err.response ? err.response.data[0] : "Error in getting prediction" 
+                        }
+                        this.setState(newState);
+                    } else {
+                        this.deselectDestinationMarker()
+                        this.setState({ 
+                            error: {
+                                isErrorAlertOpen: true,
+                                message: err.response ? err.response.data[0] : "Error in getting prediction" 
+                            },
+                            isFetchingPrediction: false
+                        })
+                    }
                 }
             )
         } else {
@@ -1100,10 +1150,11 @@ class GoogleMap extends React.Component {
                     this.setState({ 
                         error: {
                             isErrorAlertOpen: true,
-                            message: err.response.data[0]
+                            message: err.response ? err.response.data[0] : "Error in getting prediction"
                         },
                         isFetchingPrediction: false,
-                        isLatestRoutesDisabled: false 
+                        isLatestRoutesDisabled: false,
+                        activeIdForUsers: 0
                     })
                 }
             )
@@ -1113,7 +1164,15 @@ class GoogleMap extends React.Component {
     saveLatestRoute = (routeDetailsObject) => {
         axios.post(API_URL + "api/routes/save", routeDetailsObject).then(
             res => this.getLatestRoutes(),
-            err => console.log("error in saveLatestRoute", err)
+            err => {
+                console.log("error in saveLatestRoute", err)
+                this.setState({ 
+                    error: {
+                        isErrorAlertOpen: true,
+                        message: "Error in saving latest routes"
+                    }
+                })
+            }
         )
     }
 
