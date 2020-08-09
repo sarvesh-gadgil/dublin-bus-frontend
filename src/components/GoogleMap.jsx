@@ -499,14 +499,47 @@ class GoogleMap extends React.Component {
                     is_destination_toggled: this.state.isDestinationToggled
                 }
             }).then(res => {
+                let errMessage = null; 
                 if (!this.state.isDestinationToggled) {
                     clearAllMarkersExceptStart();
+                    errMessage = "The bus journey ends at this stop";
+                    if(sourceMarker.get('stop_id') !== res.data[0].stop_id) {
+                        this.setState({
+                            error: {
+                                isErrorAlertOpen: true,
+                                message: "Bus route not available"
+                            }
+                        })
+                        this.removeRoute();
+                        return;
+                    }
                 } else {
                     clearAllMarkersExceptDestination();
+                    errMessage = "The bus journey starts from this stop";
+                    if(destinationMarker.get('stop_id') !== res.data[0].stop_id) {
+                        this.setState({
+                            error: {
+                                isErrorAlertOpen: true,
+                                message: "Bus route not available"
+                            }
+                        })
+                        this.removeRoute();
+                        return;
+                    }
                 }
                 routeDataArray = []
                 allBusStopsArray = res.data;
-                this.createRoute(res.data);
+                if(res.data.length === 1) {
+                    this.setState({
+                        error: {
+                            isErrorAlertOpen: true,
+                            message: errMessage
+                        }
+                    })
+                    this.removeRoute();
+                } else {
+                    this.createRoute(res.data);
+                }
             }, err => {
                 console.log("error in handleBusToggle", err);
                 this.setState({ 
@@ -723,6 +756,7 @@ class GoogleMap extends React.Component {
 
     generatePrediction = (routeDetailsObject) => {
         console.log(routeDetailsObject);
+        this.removeRoute();
         axios.post(API_URL + "api/arrival/predict", routeDetailsObject).then(
             res => {
                 this.setState({

@@ -3,6 +3,7 @@ import './App.css';
 import Navbar from './views/Navbar';
 import { BrowserRouter, Route, Switch } from 'react-router-dom';
 import paths from './paths';
+import ErrorPage from './views/Error'
 
 class App extends React.Component {
 
@@ -19,6 +20,7 @@ class App extends React.Component {
               component={view.component}
             />
           ))}
+          <Route component={ErrorPage} />
         </Switch>
       </BrowserRouter>
     );
