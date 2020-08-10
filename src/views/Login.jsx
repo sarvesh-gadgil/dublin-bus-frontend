@@ -139,6 +139,7 @@ class Login extends React.Component {
                                     </Button>
                                     <br />
                                     <br />
+                                    <Link to="/signup" style={{ color: 'inherit', textDecoration: 'inherit' }}></Link>
                                     <Button
                                         type="button"
                                         fullWidth
