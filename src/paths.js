@@ -1,18 +1,18 @@
 import Home from './views/Home';
 import Login from './views/Login';
-import SignUp from './views/Signup';
+import Registration from './views/Registration';
 
 export default [
     {
         path: '/',
-        component: Home,
+        component: Home
     },
     {
         path: '/login',
-        component: Login,
+        component: Login
     },
     {
         path: '/signup',
-        component: SignUp,
+        component: Registration
     }
 ]
