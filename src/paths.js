@@ -1,5 +1,6 @@
 import Home from './views/Home';
 import Login from './views/Login';
+import SignUp from './views/Signup';
 
 export default [
     {
@@ -9,5 +10,9 @@ export default [
     {
         path: '/login',
         component: Login,
+    },
+    {
+        path: '/signup',
+        component: SignUp,
     }
 ]
