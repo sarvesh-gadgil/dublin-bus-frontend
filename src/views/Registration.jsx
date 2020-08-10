@@ -146,14 +146,14 @@ export class signup extends React.Component {
         }
         break;
       case 'password':
-        if (!(/^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,}$/.test(value))) {
-          this.setState({ isPasswordError: true, passwordErrorMessage: "Password must be 8 chars long with with at least a symbol, upper and lower case letters and a number" });
+        if (!(/^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,16}$/.test(value))) {
+          this.setState({ isPasswordError: true, passwordErrorMessage: "Password must be between 8 and 16 chars with with at least a special character, upper and lower case letters and a number" });
           return false;
         }
         break;
       case 'confirmPassword':
-        if (!(/^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,}$/.test(value))) {
-          this.setState({ isConfirmPasswordError: true, confirmPasswordErrorMessage: "Password must be 8 chars long with with at least a symbol, upper and lower case letters and a number" });
+        if (!(/^(?=.*\d)(?=.*[!@#$%^&*])(?=.*[a-z])(?=.*[A-Z]).{8,16}$/.test(value))) {
+          this.setState({ isConfirmPasswordError: true, confirmPasswordErrorMessage: "Password must be between 8 and 16 chars with with at least a special character, upper and lower case letters and a number" });
           return false;
         }
         break;
