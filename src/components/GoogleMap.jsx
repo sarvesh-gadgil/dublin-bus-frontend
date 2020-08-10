@@ -1327,7 +1327,7 @@ class GoogleMap extends React.Component {
                                 </div>
                             )}
 
-                            {sourceMarker !== null && destinationMarker !== null && (
+                            {sourceMarker !== null && destinationMarker !== null && !this.state.isFetchingPrediction && (
                                 <div style={{ width: 'inherit', overflow: 'auto' }}>
                                     <ToggleButtonGroup
                                         value={this.state.busToggleButton}
@@ -1339,6 +1339,20 @@ class GoogleMap extends React.Component {
                                             style={{ color: 'black' }}
                                         >
                                             <DirectionsBusIcon fontSize="small" /> {this.state.busToggleButton}
+                                            <span style={{textTransform: "none"}}>
+                                            {Math.abs(Math.round((this.state.routeDataArrayForStepper[0].arrival_time
+                                                    - moment.duration(moment(this.state.dateTimeValue).format("HH:mm")).asSeconds()) / 60)) > 60 ? (
+                                                        <>
+                                                            &nbsp;in {Math.abs(Math.round((this.state.routeDataArrayForStepper[0].arrival_time
+                                                                - moment.duration(moment(this.state.dateTimeValue).format("HH:mm")).asSeconds()) / 3600))} hrs
+                                                        </>
+                                                    ):(
+                                                        <>
+                                                            &nbsp;in {Math.abs(Math.round((this.state.routeDataArrayForStepper[0].arrival_time
+                                                                - moment.duration(moment(this.state.dateTimeValue).format("HH:mm")).asSeconds()) / 60))} min
+                                                        </>
+                                                    )}
+                                            </span>
                                         </ToggleButton>
                                     </ToggleButtonGroup>
                                 </div>
@@ -1442,8 +1456,8 @@ class GoogleMap extends React.Component {
                                             expandIcon={<ExpandMoreIcon />}
                                         >
                                             <Typography>
-                                                Total travel time: {Math.round((this.state.routeDataArrayForStepper[this.state.routeDataArrayForStepper.length - 1].arrival_time
-                                                    - this.state.routeDataArrayForStepper[0].arrival_time) / 60)} min
+                                                Total travel time: {Math.abs(Math.round((this.state.routeDataArrayForStepper[this.state.routeDataArrayForStepper.length - 1].arrival_time
+                                                    - this.state.routeDataArrayForStepper[0].arrival_time) / 60))} min
     
                                             </Typography>
                                         </AccordionSummary>
@@ -1458,7 +1472,7 @@ class GoogleMap extends React.Component {
                                                             {this.state.routeDataArrayForStepper.length - 1 !== index && (
                                                                 <StepContent>
                                                                     <Typography variant="caption">
-                                                                        ETT between stations: {Math.round(busData.section_travel_time / 60)} min
+                                                                        ETT between stations: {Math.abs(Math.round(busData.section_travel_time / 60))} min
                                                                     </Typography>
                                                                 </StepContent>
                                                             )}
@@ -1472,7 +1486,7 @@ class GoogleMap extends React.Component {
                                         <AccordionSummary
                                             expandIcon={<ExpandMoreIcon />}
                                         >
-                                            <Typography >Fare estimates:</Typography>
+                                            <Typography >Fare estimates: {adultCash}</Typography>
                                         </AccordionSummary>
                                         <AccordionDetails>
                                             <div style={{ height: 'auto', overflow: 'auto', width: "100%" }}>
