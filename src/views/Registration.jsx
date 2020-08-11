@@ -69,7 +69,8 @@ export class signup extends React.Component {
       lastNameErrorMessage: '',
       emailErrorMessage: '',
       passwordErrorMessage: '',
-      confirmPasswordErrorMessage: ''
+      confirmPasswordErrorMessage: '',
+      disabled: false
     }
 
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -176,7 +177,7 @@ export class signup extends React.Component {
     data.last_name = this.state.lastName.trim();
     data.username = this.state.email.trim();
     data.password = this.state.password.trim();
-
+    this.setState({ disabled: true })
     if (this.checkForm('firstName', data.first_name) &&
       this.checkForm('lastName', data.last_name) &&
       this.checkForm('email', data.username) &&
@@ -185,13 +186,17 @@ export class signup extends React.Component {
       this.checkForm('confirmPasswordMatch', data.password)) {
       axios.post(API_URL + 'api/user/create', data).then((response) => {
         this.setState({
-          firstName: '', lastName: '', email: '', password: '', confirmpassword: '', showPassword: false, showConfirmPassword: false, success: true
+          firstName: '', lastName: '', email: '', password: '', confirmpassword: '', showPassword: false, showConfirmPassword: false, success: true,
+          disabled: false
         });
       },
         err => {
-          this.setState({ failure: true });
+          console.log(err.response)
+          this.setState({ failure: true, disabled: false });
         }
       );
+    } else {
+      this.setState({ disabled: false })
     }
   }
 
@@ -349,6 +354,7 @@ export class signup extends React.Component {
                 />
               </Grid>
               <Button
+                disabled={this.state.disabled}
                 type="submit"
                 size="large"
                 fullWidth

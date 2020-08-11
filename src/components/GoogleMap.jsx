@@ -158,7 +158,10 @@ class GoogleMap extends React.Component {
             error: {
                 isErrorAlertOpen: false,
                 message: "Something went wrong"
-            }
+            },
+            showMarkerPickingInfo: false,
+            multipleMarkersFromGoogle: false,
+            isClickedFromRecentRoutes: false
         }
         // this.mapObject = null;
         this.map = React.createRef();
@@ -243,6 +246,7 @@ class GoogleMap extends React.Component {
             };
             newState.busArrivingAtMarkers = marker.get('all_bus_numbers');
             newState.isBusNoVisible = true;
+            newState.multipleMarkersFromGoogle = false;
             this.setState(newState);
         } else {
             if (destinationMarker != null && destinationMarker.get('stop_id') === marker.get('stop_id')) {
@@ -265,6 +269,7 @@ class GoogleMap extends React.Component {
             };
             newState.busArrivingAtMarkers = marker.get('all_bus_numbers');
             newState.isBusNoVisible = true;
+            newState.multipleMarkersFromGoogle = false;
             this.setState(newState);
         }
     }
@@ -281,6 +286,9 @@ class GoogleMap extends React.Component {
             newState.isLatestRoutesDisabled = false;
             newState.activeIdForUsers = 0;
             newState.isFetchingPrediction = false;
+            newState.showMarkerPickingInfo = false;
+            newState.multipleMarkersFromGoogle = false;
+            newState.isClickedFromRecentRoutes = false;
             this.setState(newState);
             sourceMarker = null;
             destinationMarker = null;
@@ -306,6 +314,9 @@ class GoogleMap extends React.Component {
                             newState.isFetchingPrediction = false;
                             sourceMarker = null;
                             destinationMarker = null;
+                            newState.showMarkerPickingInfo = false;
+                            newState.multipleMarkersFromGoogle = false;
+                            newState.isClickedFromRecentRoutes = false;
                             clearAllMarkersForStart();
                             this.removeRoute();
                             routeDataArray = [];
@@ -318,7 +329,9 @@ class GoogleMap extends React.Component {
                             error: {
                                 isErrorAlertOpen: true,
                                 message: "Error in getting bus stop suggestions"
-                            }
+                            },
+                            multipleMarkersFromGoogle: false,
+                            showMarkerPickingInfo: false
                         })
                     })
             } else {
@@ -332,6 +345,9 @@ class GoogleMap extends React.Component {
                 newState.isLatestRoutesDisabled = false;
                 newState.activeIdForUsers = 0;
                 newState.isFetchingPrediction = false;
+                newState.showMarkerPickingInfo = false;
+                newState.multipleMarkersFromGoogle = false;
+                newState.isClickedFromRecentRoutes = false;
                 this.setState(newState);
                 sourceMarker = null;
                 destinationMarker = null;
@@ -352,9 +368,12 @@ class GoogleMap extends React.Component {
             newState.busToggleButton = '';
             newState.routeDataArrayForStepper = [];
             newState.isBusNoVisible = false;
-            newState.isLatestRoutesDisabled = false;
+            newState.isLatestRoutesDisabled = true;
             newState.activeIdForUsers = 0;
             newState.isFetchingPrediction = false;
+            newState.showMarkerPickingInfo = false;
+            newState.multipleMarkersFromGoogle = false;
+            newState.isClickedFromRecentRoutes = false;
             this.setState(newState);
             sourceMarker = null;
             destinationMarker = null;
@@ -417,6 +436,9 @@ class GoogleMap extends React.Component {
                             markersOnMap.push(marker);
                         }
                         mapObj.fitBounds(markerBounds);
+                        if(res.data.length > 0) {
+                            this.setState({ multipleMarkersFromGoogle: true })
+                        }
                     },
                     err => {
                         console.log('error in startBusStopOnSelect', err)
@@ -424,7 +446,9 @@ class GoogleMap extends React.Component {
                             error: {
                                 isErrorAlertOpen: true,
                                 message: "Error in selecting bus stop"
-                            }
+                            },
+                            multipleMarkersFromGoogle: false,
+                            showMarkerPickingInfo: false
                         })
                     })
             } else {
@@ -473,7 +497,9 @@ class GoogleMap extends React.Component {
 
                 this.setState({
                     busArrivingAtMarkers: marker.get('all_bus_numbers'),
-                    isBusNoVisible: true
+                    isBusNoVisible: true,
+                    multipleMarkersFromGoogle: false,
+                    showMarkerPickingInfo: false
                 });
             }
         }
@@ -508,7 +534,8 @@ class GoogleMap extends React.Component {
                             error: {
                                 isErrorAlertOpen: true,
                                 message: "Bus route not available"
-                            }
+                            },
+                            showMarkerPickingInfo: false
                         })
                         this.removeRoute();
                         return;
@@ -521,7 +548,8 @@ class GoogleMap extends React.Component {
                             error: {
                                 isErrorAlertOpen: true,
                                 message: "Bus route not available"
-                            }
+                            },
+                            showMarkerPickingInfo: false
                         })
                         this.removeRoute();
                         return;
@@ -534,10 +562,12 @@ class GoogleMap extends React.Component {
                         error: {
                             isErrorAlertOpen: true,
                             message: errMessage
-                        }
+                        },
+                        showMarkerPickingInfo: false
                     })
                     this.removeRoute();
                 } else {
+                    this.setState({ showMarkerPickingInfo: true })
                     this.createRoute(res.data);
                 }
             }, err => {
@@ -1061,6 +1091,9 @@ class GoogleMap extends React.Component {
         newState.startBusStopValue = { title: '' };
         newState.isAlertOpen = true;
         newState.isLatestRoutesDisabled = false;
+        newState.showMarkerPickingInfo = false;
+        newState.multipleMarkersFromGoogle = false;
+        newState.isClickedFromRecentRoutes = false;
         this.setState(newState);
         sourceMarker = null;
         destinationMarker = null;
@@ -1107,6 +1140,7 @@ class GoogleMap extends React.Component {
             newState.isBusNoVisible = false;
             newState.isFetchingPrediction = true;
             newState.isLatestRoutesDisabled = true;
+            newState.isClickedFromRecentRoutes = true;
             this.setState(newState);
             sourceMarker = null;
             destinationMarker = null;
@@ -1250,6 +1284,7 @@ class GoogleMap extends React.Component {
                         latestRoutesForUser={this.state.latestRoutesForUser}
                         handleOnclickForLatestRoutes={this.handleOnclickForLatestRoutes}
                         isLatestRoutesDisabled={this.state.isLatestRoutesDisabled}
+                        isClickedFromRecentRoutes={this.state.isClickedFromRecentRoutes}
                     />
                 )}
                 <Grid container spacing={2}
@@ -1310,6 +1345,10 @@ class GoogleMap extends React.Component {
 
                             {this.state.isBusNoVisible && (
                                 <div style={{ width: 'inherit', overflow: 'auto' }}>
+                                    <Typography variant="caption" style={{paddingLeft: "4px", fontSize: "12px"}}>
+                                        Pick a bus from below:
+                                    </Typography>
+                                    <br/>
                                     <ToggleButtonGroup
                                         value={this.state.busToggleButton}
                                         exclusive
@@ -1325,6 +1364,46 @@ class GoogleMap extends React.Component {
                                         )}
                                     </ToggleButtonGroup>
                                 </div>
+                            )}
+
+                            {!this.state.isDestinationToggled && !sourceMarker && !destinationMarker && this.state.multipleMarkersFromGoogle && (
+                                <>  
+                                    <br />
+                                    <Alert icon={false} variant="outlined" severity="info">
+                                        Pick a source by clicking on the red markers on the map
+                                    </Alert>
+                                    <br />
+                                </>
+                            )}
+
+                            {this.state.isDestinationToggled && !sourceMarker && !destinationMarker && this.state.multipleMarkersFromGoogle && (
+                                <>  
+                                    <br />
+                                    <Alert icon={false} variant="outlined" severity="info">
+                                        Pick a destination by clicking on the red markers on the map
+                                    </Alert>
+                                    <br />
+                                </>
+                            )}
+
+                            {!this.state.isDestinationToggled && sourceMarker && !destinationMarker && this.state.showMarkerPickingInfo && (
+                                <>  
+                                    <br />
+                                    <Alert icon={false} variant="outlined" severity="info">
+                                        Pick a destination by clicking on the red markers on the map
+                                    </Alert>
+                                    <br />
+                                </>
+                            )}
+
+                            {this.state.isDestinationToggled && destinationMarker && !sourceMarker && this.state.showMarkerPickingInfo && (
+                                <>
+                                    <br />
+                                    <Alert icon={false} variant="outlined" severity="info">
+                                        Pick a source by clicking on the red markers on the map
+                                    </Alert>
+                                    <br />
+                                </>    
                             )}
 
                             {sourceMarker !== null && destinationMarker !== null && !this.state.isFetchingPrediction && (
