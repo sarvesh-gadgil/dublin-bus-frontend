@@ -8,8 +8,8 @@ import Grid from '@material-ui/core/Grid';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import Typography from '@material-ui/core/Typography';
 import moment from 'moment';
-import ToggleButton from '@material-ui/lab/ToggleButton';
-import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
+// import ToggleButton from '@material-ui/lab/ToggleButton';
+// import ToggleButtonGroup from '@material-ui/lab/ToggleButtonGroup';
 import Stepper from '@material-ui/core/Stepper';
 import Step from '@material-ui/core/Step';
 import StepLabel from '@material-ui/core/StepLabel';
@@ -46,6 +46,7 @@ import WbSunnyRoundedIcon from '@material-ui/icons/WbSunnyRounded';
 import GrainRoundedIcon from '@material-ui/icons/GrainRounded';
 import AcUnitRoundedIcon from '@material-ui/icons/AcUnitRounded';
 import FlashOnRoundedIcon from '@material-ui/icons/FlashOnRounded';
+import Chip from '@material-ui/core/Chip';
 
 const google = window.google;
 const markersInfoWindow = [];
@@ -505,7 +506,8 @@ class GoogleMap extends React.Component {
         }
     }
 
-    handleBusToggle = (event, newToggleValue) => {
+    // handleBusToggle = (event, newToggleValue) => {
+    handleBusToggle = (newToggleValue) => {
         if (!!newToggleValue) {
             this.setState({
                 busToggleButton: newToggleValue
@@ -1347,8 +1349,8 @@ class GoogleMap extends React.Component {
                                 }
                             />
 
-                            {this.state.isBusNoVisible && (
-                                <div style={{ width: 'inherit', overflow: 'auto' }}>
+                            {/* {this.state.isBusNoVisible && (
+                                <div style={{ width: 'inherit', overflow: 'scroll' }}>
                                     <Typography variant="caption" style={{paddingLeft: "4px", fontSize: "12px"}}>
                                         Pick a bus:
                                     </Typography>
@@ -1368,50 +1370,79 @@ class GoogleMap extends React.Component {
                                         )}
                                     </ToggleButtonGroup>
                                 </div>
+                            )} */}
+
+                            {this.state.isBusNoVisible && (
+                                <div style={{
+                                    padding: "3px",
+                                    backgroundColor: 'transparent'
+                                  }}>
+                                    <Typography variant="caption" style={{paddingLeft: "4px", fontSize: "12px"}}>
+                                        Pick a bus:
+                                    </Typography>
+                                    <br />
+                                    {this.state.busArrivingAtMarkers.map((bus, index) =>
+                                        <span key={index}>
+                                            {this.state.busToggleButton === bus.bus_number + "(" + bus.direction + ")" ? (
+                                                <Chip variant="outlined" color="primary" icon={<DirectionsBusIcon fontSize="small" />} 
+                                                    label={bus.bus_number + "(" + bus.direction + ")"}
+                                                    style={{margin: 2}}
+                                                    onClick={this.handleBusToggle.bind(this, bus.bus_number + "(" + bus.direction + ")")}
+                                                />
+                                            ):(
+                                                <Chip variant="outlined" icon={<DirectionsBusIcon fontSize="small" />} 
+                                                    label={bus.bus_number + "(" + bus.direction + ")"}
+                                                    style={{margin: 2}}
+                                                    onClick={this.handleBusToggle.bind(this, bus.bus_number + "(" + bus.direction + ")")}
+                                                />
+                                            )}
+                                        </span>        
+                                    )}
+                                </div>
                             )}
 
                             {!this.state.isDestinationToggled && !sourceMarker && !destinationMarker && this.state.multipleMarkersFromGoogle && (
                                 <>  
-                                    <br />
+                                    {/* <br /> */}
                                     <Alert icon={false} variant="outlined" severity="info">
                                         Pick a source by clicking on the red markers on the map
                                     </Alert>
-                                    <br />
+                                    {/* <br /> */}
                                 </>
                             )}
 
                             {this.state.isDestinationToggled && !sourceMarker && !destinationMarker && this.state.multipleMarkersFromGoogle && (
                                 <>  
-                                    <br />
+                                    {/* <br /> */}
                                     <Alert icon={false} variant="outlined" severity="info">
                                         Pick a destination by clicking on the red markers on the map
                                     </Alert>
-                                    <br />
+                                    {/* <br /> */}
                                 </>
                             )}
 
                             {!this.state.isDestinationToggled && sourceMarker && !destinationMarker && this.state.showMarkerPickingInfo && (
                                 <>  
-                                    <br />
+                                    {/* <br /> */}
                                     <Alert icon={false} variant="outlined" severity="info">
                                         Pick a destination by clicking on the red markers on the map
                                     </Alert>
-                                    <br />
+                                    {/* <br /> */}
                                 </>
                             )}
 
                             {this.state.isDestinationToggled && destinationMarker && !sourceMarker && this.state.showMarkerPickingInfo && (
                                 <>
-                                    <br />
+                                    {/* <br /> */}
                                     <Alert icon={false} variant="outlined" severity="info">
                                         Pick a source by clicking on the red markers on the map
                                     </Alert>
-                                    <br />
+                                    {/* <br /> */}
                                 </>    
                             )}
 
-                            {sourceMarker !== null && destinationMarker !== null && !this.state.isFetchingPrediction && (
-                                <div style={{ width: 'inherit', overflow: 'auto' }}>
+                            {/* {sourceMarker !== null && destinationMarker !== null && !this.state.isFetchingPrediction && (
+                                <div style={{ width: 'inherit', overflow: 'scroll' }}>
                                     <ToggleButtonGroup
                                         value={this.state.busToggleButton}
                                         exclusive
@@ -1438,6 +1469,31 @@ class GoogleMap extends React.Component {
                                             </span>
                                         </ToggleButton>
                                     </ToggleButtonGroup>
+                                </div>
+                            )} */}
+
+                            {sourceMarker !== null && destinationMarker !== null && !this.state.isFetchingPrediction && (
+                                <div style={{
+                                    padding: "3px",
+                                    backgroundColor: 'transparent'
+                                  }}>
+                                      {
+                                          Math.abs(Math.round((this.state.routeDataArrayForStepper[0].arrival_time
+                                                    - moment.duration(moment(this.state.dateTimeValue).format("HH:mm")).asSeconds()) / 60)) > 60 ? (
+                                                        <>
+                                                            <Chip variant="outlined" color="primary" icon={<DirectionsBusIcon fontSize="small" />} 
+                                                                    label={this.state.busToggleButton + " in "+ Math.abs(Math.round((this.state.routeDataArrayForStepper[0].arrival_time
+                                                                        - moment.duration(moment(this.state.dateTimeValue).format("HH:mm")).asSeconds()) / 3600)) + " hrs"}
+                                                            />    
+                                                        </>
+                                                    ):(
+                                                        <>
+                                                            <Chip variant="outlined" color="primary" icon={<DirectionsBusIcon fontSize="small" />} 
+                                                                    label={this.state.busToggleButton + " in "+ Math.abs(Math.round((this.state.routeDataArrayForStepper[0].arrival_time
+                                                                        - moment.duration(moment(this.state.dateTimeValue).format("HH:mm")).asSeconds()) / 60)) + " min"}
+                                                            />  
+                                                        </>
+                                        )}
                                 </div>
                             )}
 
@@ -1480,7 +1536,7 @@ class GoogleMap extends React.Component {
                             )}
 
                             {sourceMarker && destinationMarker && !this.state.isFetchingPrediction && (
-                                <div style={{ maxHeight: '315px', overflow: 'auto' }}>
+                                <div style={{ maxHeight: '315px', overflow: 'scroll' }}>
                                     <br />
                                     <Card style={{ padding: "10px" }} variant="outlined">
                                         <Grid container spacing={1}
@@ -1545,7 +1601,7 @@ class GoogleMap extends React.Component {
                                             </Typography>
                                         </AccordionSummary>
                                         <AccordionDetails>
-                                            <div style={{ height: '200px', overflow: 'auto', width: "100%" }}>
+                                            <div style={{ height: '200px', overflow: 'scroll', width: "100%" }}>
                                                 <Stepper orientation="vertical" style={{ backgroundColor: "transparent" }}>
                                                     {this.state.routeDataArrayForStepper.map((busData, index) => (
                                                         <Step key={index} active>
@@ -1572,7 +1628,7 @@ class GoogleMap extends React.Component {
                                             <Typography >Fare estimates: {adultCash}</Typography>
                                         </AccordionSummary>
                                         <AccordionDetails>
-                                            <div style={{ height: 'auto', overflow: 'auto', width: "100%" }}>
+                                            <div style={{ height: 'auto', overflow: 'scroll', width: "100%" }}>
                                                 <TableContainer style={{ backgroundColor: "transparent" }}>
                                                     <Table size="small">
                                                         <TableHead>

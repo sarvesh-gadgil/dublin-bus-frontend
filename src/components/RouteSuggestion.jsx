@@ -55,7 +55,7 @@ const welcomeMessageAndSuggestion = (props) => {
                                             >
                                                 {/* {route.route}<br/>
                                                 {route.from}<br/><ArrowRightAltSharpIcon fontSize="small" />{route.to} */}
-                                                Bus No.{route.route}<br />
+                                                Bus No. {route.route}({route.direction})<br />
                                                 {route.from} → {route.to}
                                             </Button>
                                         )}
