@@ -1691,12 +1691,20 @@ class GoogleMap extends React.Component {
                                     </Accordion>
                                     <br />
                                     {this.props.leapCardAccountInfo ? (
-                                        <Typography variant="caption" color="textSecondary" style={{fontSize: "14px"}}>
-                                            Remaining Adult Leap Balance: <b>€{(this.props.leapCardAccountInfo.balance - adultLeapNumeric).toFixed(2)}</b>
-                                        </Typography>
+                                        <>
+                                            {this.props.leapCardAccountInfo.balance < 0 ? (
+                                                <Typography variant="caption" color="textSecondary" style={{fontSize: "14px"}}>
+                                                    You have negative balance. Please recharge your leap card to see remaining balance.
+                                                </Typography>
+                                            ):(
+                                                <Typography variant="caption" color="textSecondary" style={{fontSize: "14px"}}>
+                                                    Remaining Student Leap Balance: <b>€{(this.props.leapCardAccountInfo.balance - adultLeapNumeric).toFixed(2)}</b>
+                                                </Typography>
+                                            )}
+                                        </>
                                     ):(
                                         <Typography variant="caption" color="textSecondary">
-                                            Tip: Check leap card balance and search again to view remaining balance after journey
+                                            Tip: Check leap card balance and search again to view remaining balance after journey!
                                         </Typography>
                                     )}
                                 </div>
