@@ -224,7 +224,7 @@ export class signup extends React.Component {
       <Container component="main" maxWidth="xs">
         <Snackbar open={this.state.success} autoHideDuration={2000} onClose={this.handleClose}>
           <Alert onClose={this.handleClose} severity="success">
-            Registered Successfully!
+            You are registered successfully!
           </Alert>
         </Snackbar>
         <Snackbar open={this.state.failure} autoHideDuration={2000} onClose={this.handleFailureClose}>

@@ -1254,7 +1254,7 @@ class GoogleMap extends React.Component {
     }
 
     render() {
-        let isExpressBus = false, adultCash, adultLeap, childCash = "€1.30", childLeap = "€1.00", schoolHrsCash = "€1.00", schoolHrsLeap = "€0.80";
+        let isExpressBus = false, adultCash, adultLeap, adultLeapNumeric = 0.0, childCash = "€1.30", childLeap = "€1.00", schoolHrsCash = "€1.00", schoolHrsLeap = "€0.80";
         if (sourceMarker !== null && destinationMarker !== null) {
             isExpressBus = this.state.busToggleButton.indexOf("X") !== -1;
             if (!isExpressBus) {
@@ -1262,16 +1262,20 @@ class GoogleMap extends React.Component {
                 if (totalStops >= 1 && totalStops <= 3) {
                     adultCash = "€2.15";
                     adultLeap = "€1.55";
+                    adultLeapNumeric = 1.55;
                 } else if (totalStops >= 4 && totalStops <= 13) {
                     adultCash = "€3.00";
                     adultLeap = "€2.25";
+                    adultLeapNumeric = 2.25;
                 } else {
                     adultCash = "€3.30";
                     adultLeap = "€2.50";
+                    adultLeapNumeric = 2.50;
                 }
             } else {
                 adultCash = "€3.80";
                 adultLeap = "€3.00";
+                adultLeapNumeric = 3.00;
                 childCash = "€1.60";
                 childLeap = "€1.26";
             }
@@ -1346,7 +1350,7 @@ class GoogleMap extends React.Component {
                             {this.state.isBusNoVisible && (
                                 <div style={{ width: 'inherit', overflow: 'auto' }}>
                                     <Typography variant="caption" style={{paddingLeft: "4px", fontSize: "12px"}}>
-                                        Pick a bus from below:
+                                        Pick a bus:
                                     </Typography>
                                     <br/>
                                     <ToggleButtonGroup
@@ -1629,6 +1633,16 @@ class GoogleMap extends React.Component {
                                             </div>
                                         </AccordionDetails>
                                     </Accordion>
+                                    <br />
+                                    {this.props.leapCardAccountInfo ? (
+                                        <Typography variant="caption" color="textSecondary" style={{fontSize: "14px"}}>
+                                            Remaining Adult Leap Balance: <b>€{(this.props.leapCardAccountInfo.balance - adultLeapNumeric).toFixed(2)}</b>
+                                        </Typography>
+                                    ):(
+                                        <Typography variant="caption" color="textSecondary">
+                                            Tip: Check leap card balance and search again to view remaining balance after journey
+                                        </Typography>
+                                    )}
                                 </div>
                             )}
                             <Snackbar
@@ -1668,7 +1682,8 @@ class GoogleMap extends React.Component {
 const mapStateToProps = (state) => {
     return {
         isAuthenticated: state.isAuthenticated,
-        user: state.user
+        user: state.user,
+        leapCardAccountInfo: state.leapCardAccountInfo
     }
 }
 
