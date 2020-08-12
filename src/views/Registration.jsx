@@ -9,16 +9,13 @@ import Typography from '@material-ui/core/Typography';
 import { withStyles } from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
 import Snackbar from '@material-ui/core/Snackbar';
-import MuiAlert from '@material-ui/lab/Alert';
+import Alert from '@material-ui/lab/Alert';
 import InputAdornment from '@material-ui/core/InputAdornment';
 import Visibility from '@material-ui/icons/Visibility';
 import VisibilityOff from '@material-ui/icons/VisibilityOff';
 import axios from 'axios';
 import { API_URL } from '../constants';
 
-function Alert(props) {
-  return <MuiAlert elevation={6} variant="filled" {...props} />;
-}
 
 const useStyles = (theme) => ({
   root: {
@@ -69,7 +66,8 @@ export class signup extends React.Component {
       lastNameErrorMessage: '',
       emailErrorMessage: '',
       passwordErrorMessage: '',
-      confirmPasswordErrorMessage: ''
+      confirmPasswordErrorMessage: '',
+      disabled: false
     }
 
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -176,7 +174,7 @@ export class signup extends React.Component {
     data.last_name = this.state.lastName.trim();
     data.username = this.state.email.trim();
     data.password = this.state.password.trim();
-
+    this.setState({ disabled: true })
     if (this.checkForm('firstName', data.first_name) &&
       this.checkForm('lastName', data.last_name) &&
       this.checkForm('email', data.username) &&
@@ -185,13 +183,17 @@ export class signup extends React.Component {
       this.checkForm('confirmPasswordMatch', data.password)) {
       axios.post(API_URL + 'api/user/create', data).then((response) => {
         this.setState({
-          firstName: '', lastName: '', email: '', password: '', confirmpassword: '', showPassword: false, showConfirmPassword: false, success: true
+          firstName: '', lastName: '', email: '', password: '', confirmpassword: '', showPassword: false, showConfirmPassword: false, success: true,
+          disabled: false
         });
       },
         err => {
-          this.setState({ failure: true });
+          console.log(err.response)
+          this.setState({ failure: true, disabled: false });
         }
       );
+    } else {
+      this.setState({ disabled: false })
     }
   }
 
@@ -219,7 +221,7 @@ export class signup extends React.Component {
       <Container component="main" maxWidth="xs">
         <Snackbar open={this.state.success} autoHideDuration={2000} onClose={this.handleClose}>
           <Alert onClose={this.handleClose} severity="success">
-            Registered Successfully!
+            You are registered successfully!
           </Alert>
         </Snackbar>
         <Snackbar open={this.state.failure} autoHideDuration={2000} onClose={this.handleFailureClose}>
@@ -349,6 +351,7 @@ export class signup extends React.Component {
                 />
               </Grid>
               <Button
+                disabled={this.state.disabled}
                 type="submit"
                 size="large"
                 fullWidth

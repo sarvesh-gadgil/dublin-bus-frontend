@@ -1,6 +1,7 @@
 import Home from './views/Home';
 import Login from './views/Login';
 import Registration from './views/Registration';
+import LeapCard from './views/LeapCard';
 
 export default [
     {
@@ -14,5 +15,9 @@ export default [
     {
         path: '/signup',
         component: Registration
+    },
+    {
+        path: '/check-leap-balance',
+        component: LeapCard
     }
 ]

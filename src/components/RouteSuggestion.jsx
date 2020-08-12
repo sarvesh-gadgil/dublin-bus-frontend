@@ -2,7 +2,7 @@ import React from 'react';
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
 import ButtonGroup from '@material-ui/core/ButtonGroup';
-import ArrowRightAltSharpIcon from '@material-ui/icons/ArrowRightAltSharp';
+// import ArrowRightAltSharpIcon from '@material-ui/icons/ArrowRightAltSharp';
 import Paper from '@material-ui/core/Paper';
 import Grid from '@material-ui/core/Grid';
 import { Timeline } from 'react-twitter-widgets';
@@ -37,6 +37,14 @@ const welcomeMessageAndSuggestion = (props) => {
                                     <Typography color="textSecondary">
                                         Recent Routes
                                     </Typography>
+                                    {props.isLatestRoutesDisabled && !props.isClickedFromRecentRoutes && (
+                                        <>
+                                            <Typography variant="caption" style={{ color: "red" }}>
+                                                Note: Clear search box or toggle source-destination to view recent routes
+                                            </Typography>
+                                            <br />
+                                        </>
+                                    )}
                                     <ButtonGroup disableElevation variant="text">
                                         {props.latestRoutesForUser.map((route, index) =>
                                             <Button
@@ -45,7 +53,10 @@ const welcomeMessageAndSuggestion = (props) => {
                                                 onClick={() => props.handleOnclickForLatestRoutes(route.id, route.route, route.direction)}
                                                 style={{ textTransform: "none" }}
                                             >
-                                                {route.from}<ArrowRightAltSharpIcon fontSize="small" />{route.to}
+                                                {/* {route.route}<br/>
+                                                {route.from}<br/><ArrowRightAltSharpIcon fontSize="small" />{route.to} */}
+                                                Bus No. {route.route}({route.direction})<br />
+                                                {route.from} → {route.to}
                                             </Button>
                                         )}
                                     </ButtonGroup>
@@ -54,7 +65,7 @@ const welcomeMessageAndSuggestion = (props) => {
                         </>
                     ) : (
                             <>
-                                <Typography color="textSecondary" style={{padding: "5px"}}>
+                                <Typography color="textSecondary" style={{ padding: "5px" }}>
                                     No Recent Routes available. Try searching for different destinations!
                                 </Typography>
                             </>

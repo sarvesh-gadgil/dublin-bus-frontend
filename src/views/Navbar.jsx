@@ -7,6 +7,7 @@ import AppBar from '@material-ui/core/AppBar';
 import Toolbar from '@material-ui/core/Toolbar';
 import Button from '@material-ui/core/Button';
 import logo from '../images/logo.png';
+import Divider from '@material-ui/core/Divider';
 
 
 class Navbar extends React.Component {
@@ -23,6 +24,10 @@ class Navbar extends React.Component {
                     <div style={{ flex: 1 }}>
                         <Link to="/"><img src={logo} alt="logo" /></Link>
                     </div>
+                    <Link to="/check-leap-balance" style={{ color: 'inherit', textDecoration: 'inherit' }}>
+                        <Button color="inherit">Leap Card</Button>
+                    </Link>
+                    <Divider orientation="vertical" variant="middle" style={{ backgroundColor: "gray", height: "45px" }} />
                     {this.props.isAuthenticated ? (
                         <Button color="inherit" variant="outlined" onClick={this.logoutUser.bind(this)}>Logout</Button>
                     ) : (
