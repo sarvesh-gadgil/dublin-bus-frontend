@@ -1,4 +1,16 @@
-This repo forms the frontend of Dublin Bus application which is the project to be done for Research Practicum. In this project, user will enter start and end destination. Using ML models, a travel time will be generated and displayed to the user. React.js is used as the frontend technology.
+This repo forms the frontend of Dublin Bus application which is the project to be done for Research Practicum. In this project, user will enter start and end stop. Using ML models, a travel time will be generated and displayed to the user. React.js is used as the frontend technology.
+
+References:
+https://reactjs.org/docs/getting-started.html
+
+https://redux.js.org/
+
+https://material-ui.com/
+
+
+To run the entire website, backend should be up and running. Please follow the instructions here:
+
+https://github.com/sarvesh-gadgil/dublin-bus-backend
 
 To run this project, Node.js is needed to be installed first. In the project directory, you can run:
 
@@ -39,3 +51,4 @@ Instead, it will copy all the configuration files and the transitive dependencie
 
 You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
 
+All of the above text is automatically generated when we create a React application.
